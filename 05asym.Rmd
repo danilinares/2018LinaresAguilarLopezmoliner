@@ -1,0 +1,861 @@
+---
+title: "Symmetric task "
+output: html_notebook
+---
+
+### Reading libraries and parameters
+
+```{r, message=FALSE}
+library(tidyverse)
+library(quickpsy)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+load(file = "logdata/dat_asym.RData")
+```
+
+
+### Fixed lapse rate to 0% or 1%
+
+```{r fig.height=25, fig.width=8}
+
+fun_normal<- function(x, p) {
+  pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+}
+
+fun_normal_asyn_one <- function(x, p) {
+  .01 + (1- .01) * pnorm(x, p[1] - p[2], p[3]) - (1- .01) * pnorm(x, p[1] + p[2], p[3])
+}
+
+fit_asym_without_asyn_zero <- quickpsy(dat_asym, 
+                     orientation, response, 
+                     fun = fun_normal,
+                     parini = list(pini_origin_asym, pini_origin_asym, pini_scale),
+                     grouping = .(subject, reference),
+                     bootstrap = "none")
+
+fit_asym_without_asyn_one <- quickpsy(dat_asym, 
+                             orientation, response, 
+                             fun = fun_normal_asyn_one,
+                             parini = list(pini_origin_asym, pini_origin_asym, pini_scale),
+                             grouping = .(subject, reference),
+                             bootstrap = "none")
+
+ms_asym_without_asyn_zero_vs_without_asyn_one <- model_selection_aic(
+  fit_asym_without_asyn_zero$aic, fit_asym_without_asyn_one$aic) %>% 
+  mutate(best = if_else(best == "first", 
+                        "without_asyn_zero", "without_asyn_one"))
+
+ms_asym_without_asyn_zero_vs_without_asyn_one %>% 
+  group_by(best) %>% 
+  count() 
+
+ggplot() + facet_grid(subject ~ reference) +
+  geom_point(data = fit_asym_without_asyn_zero$averages, 
+             aes(x = orientation, y = prob)) +
+  geom_line(data = fit_asym_without_asyn_zero$curves, 
+            aes(x = x, y = y, color = "without asyn zero")) +
+  geom_line(data = fit_asym_without_asyn_one$curves, 
+            aes(x = x, y = y, color = "without asyn one")) +
+  geom_text(data = ms_asym_without_asyn_zero_vs_without_asyn_one,
+            aes(x = .7, y = .1, label = best), size = 3) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+Adding a fixed lapse rate does not change much the fits. 
+
+
+### Checking that the parameters do not reach the boundaries of the initial parameters
+
+```{r}
+fit_asym_without_asyn_zero$par %>% 
+  filter(parn == "p1") %>% 
+  filter(abs(par) >= pini_origin_asym[2])
+
+fit_asym_without_asyn_zero$par %>% 
+  filter(parn == "p2") %>% 
+  filter(abs(par) >= pini_origin_asym[2])
+
+fit_asym_without_asyn_zero$par %>% 
+  filter(parn == "p3") %>% 
+  filter(abs(par) >= pini_scale[2])
+```
+
+
+### One variable lapse rate vs fixed lapse rate
+
+```{r fig.height=20, fig.width=8}
+fun_normal_with_one_asyn <- function(x, p) {
+  p[4] + (1 - p[4]) * pnorm(x, p[1] - p[2], p[3]) - (1 - p[4]) * pnorm(x, p[1] + p[2], p[3])
+}
+
+fit_asym_with_one_asyn <- quickpsy(dat_asym, 
+          orientation, response, 
+          fun = fun_normal_with_one_asyn,
+          parini = list(pini_origin_asym, pini_origin_asym, pini_scale, pini_lapse),
+          grouping = .(subject, reference),
+          bootstrap = "none")
+
+
+fit_asym_without_asyn_zero_better <- ms_asym_without_asyn_zero_vs_without_asyn_one %>% 
+  filter(best == "without_asyn_zero") %>% 
+  select(subject, reference)
+
+fit_asym_without_asyn_one_better <- ms_asym_without_asyn_zero_vs_without_asyn_one %>% 
+  filter(best == "without_asyn_one") %>% 
+  select(subject, reference)
+
+                                   
+fit_asym_without_asyn_zero_better_logliks <- fit_asym_without_asyn_zero$logliks %>%
+  semi_join(fit_asym_without_asyn_zero_better, by = c("subject", "reference"))
+  
+fit_asym_without_asyn_one_better_logliks <- fit_asym_without_asyn_one$logliks %>%
+  semi_join(fit_asym_without_asyn_one_better, by = c("subject", "reference"))
+
+fit_asym_without_asyn_logliks <- fit_asym_without_asyn_zero_better_logliks %>% 
+  bind_rows(fit_asym_without_asyn_one_better_logliks)
+  
+ms_asym_with_one_asyn_vs_without_asyn <- model_selection_lrt(
+  fit_asym_with_one_asyn$logliks, fit_asym_without_asyn_logliks)  %>% 
+  mutate(best = if_else(best == "first", 
+                        "with_one_asyn", "without_asyn"))
+
+fit_asym_with_one_asyn_better <- ms_asym_with_one_asyn_vs_without_asyn %>% 
+  filter(best == "with_one_asyn") %>% 
+  select(subject, reference)
+
+fit_asym_without_asyn_zero_better_curves <- fit_asym_without_asyn_zero$curves %>%
+  semi_join(fit_asym_without_asyn_zero_better, by = c("subject", "reference"))
+  
+fit_asym_without_asyn_one_better_curves <- fit_asym_without_asyn_one$curves %>%
+  semi_join(fit_asym_without_asyn_one_better, by = c("subject", "reference"))
+
+fit_asym_without_asyn_curves <- fit_asym_without_asyn_zero_better_curves %>% 
+  bind_rows(fit_asym_without_asyn_one_better_curves)
+
+ggplot() + facet_grid(subject ~ reference) +
+  geom_point(data = fit_asym_with_one_asyn$averages, 
+             aes(x = orientation, y = prob)) +
+  geom_line(data = fit_asym_with_one_asyn$curves, 
+            aes(x = x, y = y, color = "one asyn")) +
+  geom_line(data = fit_asym_without_asyn_curves, 
+            aes(x = x, y = y, color = "without asyn")) +
+  geom_text(data = ms_asym_with_one_asyn_vs_without_asyn, 
+            aes(x = .7, y = .1, label = best), size = 3) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+Adding a lapse rate parameter produce poor fits. 
+
+
+### Fitting
+```{r fig.height=9, fig.width=13}
+refs <- dat_asym %>% distinct(vertical, references, reference)
+
+fit_asym_full_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  fun_2 <- function(x, p) pnorm(x, p[1] - p[4], p[6]) - pnorm(x, p[1] + p[5], p[6])
+  
+  pini <- list(pini_origin_asym, pini_origin_asym, pini_scale, 
+               pini_origin_asym, pini_origin_asym, pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_same_slope_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  fun_2 <- function(x, p) pnorm(x, p[1] - p[4], p[3]) - pnorm(x, p[1] + p[5], p[3])
+  
+  pini <- list(pini_origin_asym, pini_origin_asym, pini_scale, 
+               pini_origin_asym, pini_origin_asym)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_sym_crit_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  fun_2 <- function(x, p) pnorm(x, p[1] - p[4], p[5]) - pnorm(x, p[1] + p[4], p[5])
+  
+  pini <- list(pini_origin_asym, pini_origin_asym, pini_scale, 
+               pini_origin_asym, pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_sym_crit_same_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  fun_2 <- function(x, p) pnorm(x, p[1] - p[2], p[4]) - pnorm(x, p[1] + p[2], p[4])
+  
+  pini <- list(pini_origin_asym, pini_origin_asym, pini_scale, 
+               pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_sym_crit_same_zero_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, - p[1], p[2]) - pnorm(x, p[1], p[2])
+  fun_2 <- function(x, p) pnorm(x, - p[1], p[3]) - pnorm(x, p[1], p[3])
+  
+  pini <- list(pini_origin_asym, pini_scale, pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+
+fit_asym_full_same_slope_sym_crit_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  fun_2 <- function(x, p) pnorm(x, p[1] - p[4], p[3]) - pnorm(x, p[1] + p[4], p[3])
+  
+  pini <- list(pini_origin_asym, pini_origin_asym, pini_scale, 
+               pini_origin_asym)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_same_slope_sym_crit_zero_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, - p[1], p[2]) - pnorm(x,p[1], p[2])
+  fun_2 <- function(x, p) pnorm(x, - p[3], p[2]) - pnorm(x, p[3], p[2])
+  
+  pini <- list(pini_origin_asym, pini_scale, 
+               pini_origin_asym)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_same_slope_sym_crit_same_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  fun_2 <- function(x, p) pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+  
+  pini <- list(pini_origin_asym, pini_origin_asym, pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_same_slope_sym_crit_same_zero_fun <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, - p[1], p[2]) - pnorm(x, p[1], p[2])
+  fun_2 <- function(x, p) pnorm(x, - p[1], p[2]) - pnorm(x, p[1], p[2])
+  
+  pini <- list(pini_origin_asym, pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+fit_asym_full_fun_zero <- function(data) {
+  
+  fun_1 <- function(x, p) pnorm(x, - p[1], p[2]) - pnorm(x, p[1], p[2])
+  fun_2 <- function(x, p) pnorm(x, - p[3], p[4]) - pnorm(x, p[3], p[4])
+  
+  pini <- list(pini_origin_asym, pini_scale, 
+               pini_origin_asym, pini_scale)
+
+  fun_df <- data %>% 
+    distinct(references) %>% 
+    arrange(references) %>% 
+    bind_cols(tibble(fun = c(fun_1, fun_2))) 
+
+  quickpsy(data, orientation, response, fun = fun_df, xmin = -4, xmax = 4,
+           parini = pini, bootstrap = "none", grouping = .(references),
+           threshold = FALSE)
+}
+
+
+
+
+fit_asym_best <- dat_asym %>% 
+  group_by(subject, vertical) %>% 
+  nest() %>% 
+  mutate(fit_asym_full = map(data, fit_asym_full_fun),
+         fit_asym_full_sym_crit = map(data, fit_asym_full_sym_crit_fun),
+         fit_asym_full_sym_crit_same = map(data, fit_asym_full_sym_crit_same_fun),
+         fit_asym_full_sym_crit_same_zero = map(data, fit_asym_full_sym_crit_same_zero_fun),
+         fit_asym_full_zero = map(data, fit_asym_full_fun_zero),
+         fit_asym_full_same_slope = map(data, fit_asym_full_same_slope_fun),
+         fit_asym_full_same_slope_sym_crit = map(data, fit_asym_full_same_slope_sym_crit_fun),
+         fit_asym_full_same_slope_sym_crit_zero = map(data, fit_asym_full_same_slope_sym_crit_zero_fun),
+         fit_asym_full_same_slope_sym_crit_same = map(data, fit_asym_full_same_slope_sym_crit_same_fun),
+         fit_asym_full_same_slope_sym_crit_same_zero = map(data, fit_asym_full_same_slope_sym_crit_same_zero_fun)) %>% 
+      #   fit_asym_zero = map(data, fit_asym_zero_fun),
+       #  fit_asym_p = map(data, fit_asym_p_fun),
+       #  fit_asym_d = map(data, fit_asym_d_fun)) %>% 
+  select(-data)
+```
+
+### Full
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full same slope
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full vs full same slope 
+
+```{r}
+asym_full_vs_full_same_slope <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_loglik = map(fit_asym_full, "logliks"),
+         fit_asym_full_same_slope_loglik = map(fit_asym_full_same_slope, "logliks"),
+         best = map2_chr(fit_asym_full_loglik, fit_asym_full_same_slope_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_vs_full_same_slope %>% 
+  group_by(best) %>% 
+  count()     
+         
+best_asym_full_no_same_slope <- asym_full_vs_full_same_slope %>% 
+  filter(best == "first") %>% 
+  select(subject, vertical)
+
+best_asym_full_same_slope <- asym_full_vs_full_same_slope %>% 
+  filter(best == "second") %>% 
+  select(subject, vertical)
+```
+
+
+
+### Full no same slope sym crit
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_sym_crit, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_sym_crit, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full no same slope vs full no same slope sym crit 
+
+```{r}
+asym_full_no_same_slope_vs_full_no_same_slope_sym_crit <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_loglik = map(fit_asym_full, "logliks"),
+         fit_asym_full_sym_crit_loglik = map(fit_asym_full_sym_crit, "logliks"),
+         best = map2_chr(fit_asym_full_loglik, fit_asym_full_sym_crit_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_no_same_slope_vs_full_no_same_slope_sym_crit %>% 
+  semi_join(best_asym_full_no_same_slope) %>% 
+  group_by(best) %>% 
+  count()     
+         
+
+best_asym_full_no_same_slope_sym_crit <- asym_full_no_same_slope_vs_full_no_same_slope_sym_crit %>% 
+  semi_join(best_asym_full_no_same_slope) %>% 
+  filter(best == "second") %>% 
+  select(subject, vertical)
+```
+
+### Full no same slope sym crit same 
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_sym_crit_same, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_sym_crit_same, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full no same slope sym crit vs full no same slope sym crit same 
+
+```{r}
+asym_full_no_same_slope_sym_crit_vs_full_no_same_slope_sym_crit_same <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_sym_crit_loglik = map(fit_asym_full_sym_crit, "logliks"),
+         fit_asym_full_sym_crit_same_loglik = map(fit_asym_full_sym_crit_same, "logliks"),
+         best = map2_chr(fit_asym_full_sym_crit_loglik, fit_asym_full_sym_crit_same_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_no_same_slope_sym_crit_vs_full_no_same_slope_sym_crit_same %>% 
+  semi_join(best_asym_full_no_same_slope_sym_crit) %>% 
+  group_by(best) %>% 
+  count()     
+         
+
+best_asym_full_no_same_slope_sym_crit_same <- asym_full_no_same_slope_sym_crit_vs_full_no_same_slope_sym_crit_same %>% 
+  semi_join(best_asym_full_no_same_slope_sym_crit) %>% 
+  filter(best == "second") %>% 
+  select(subject, vertical)
+```
+
+### Full no same slope sym crit same zero
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_sym_crit_same_zero, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_sym_crit_same_zero, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full no same slope sym crit same vs full no same slope sym crit same zero
+
+```{r}
+asym_full_no_same_slope_sym_crit_same_vs_full_no_same_slope_sym_crit_same_zero <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_sym_crit_same_loglik = map(fit_asym_full_sym_crit_same, "logliks"),
+         fit_asym_full_sym_crit_same_zero_loglik = map(fit_asym_full_sym_crit_same_zero, "logliks"),
+         best = map2_chr(fit_asym_full_sym_crit_same_loglik, fit_asym_full_sym_crit_same_zero_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_no_same_slope_sym_crit_same_vs_full_no_same_slope_sym_crit_same_zero %>% 
+  semi_join(best_asym_full_no_same_slope_sym_crit_same) %>% 
+  group_by(best) %>% 
+  count()     
+         
+### Add to s vs d
+best_asym_full_no_same_slope_sym_crit_same_no_zero <- asym_full_no_same_slope_sym_crit_same_vs_full_no_same_slope_sym_crit_same_zero %>%
+  semi_join(best_asym_full_no_same_slope_sym_crit_same) %>% 
+  filter(best == "first") %>% 
+  select(subject, vertical) %>% 
+  mutate(best = "response")
+```
+
+### Full same slope sym crit
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+### Full same slope vs full same slope sym crit 
+
+```{r}
+asym_full_same_slope_vs_full_same_slope_sym_crit <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_same_slope_loglik = map(fit_asym_full_same_slope, "logliks"),
+         fit_asym_full_same_slope_sym_crit_loglik = map(fit_asym_full_same_slope_sym_crit, "logliks"),
+         best = map2_chr(fit_asym_full_same_slope_loglik, fit_asym_full_same_slope_sym_crit_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_same_slope_vs_full_same_slope_sym_crit %>% 
+  semi_join(best_asym_full_same_slope) %>% 
+  group_by(best) %>% 
+  count()     
+         
+### Add to s vs d
+best_asym_full_same_slope_no_sym_crit <- asym_full_same_slope_vs_full_same_slope_sym_crit %>%
+  semi_join(best_asym_full_same_slope) %>% 
+  filter(best == "first") %>% 
+  select(subject, vertical) %>% 
+  mutate(best = "no sym crit")
+
+best_asym_full_same_slope_sym_crit <- asym_full_same_slope_vs_full_same_slope_sym_crit %>%
+  semi_join(best_asym_full_same_slope) %>% 
+  filter(best == "second") %>% 
+  select(subject, vertical) 
+```
+
+### Full same slope sym crit same 
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit_same, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit_same, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+### Full same slope sym crit vs full same slope sym crit same
+
+```{r}
+asym_full_same_slope_sym_crit_vs_full_same_slope_sym_crit_same <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_same_slope_sym_crit_loglik = map(fit_asym_full_same_slope_sym_crit, "logliks"),
+         fit_asym_full_same_slope_sym_crit_same_loglik = map(fit_asym_full_same_slope_sym_crit_same, "logliks"),
+         best = map2_chr(fit_asym_full_same_slope_sym_crit_loglik, fit_asym_full_same_slope_sym_crit_same_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_same_slope_sym_crit_vs_full_same_slope_sym_crit_same %>% 
+  semi_join(best_asym_full_same_slope_sym_crit) %>% 
+  group_by(best) %>% 
+  count()     
+         
+best_asym_full_same_slope_sym_crit_no_same <- asym_full_same_slope_sym_crit_vs_full_same_slope_sym_crit_same %>%
+  semi_join(best_asym_full_same_slope_sym_crit) %>% 
+  filter(best == "first") %>% 
+  select(subject, vertical) 
+
+best_asym_full_same_slope_sym_crit_same <- asym_full_same_slope_sym_crit_vs_full_same_slope_sym_crit_same %>%
+  semi_join(best_asym_full_same_slope_sym_crit) %>% 
+  filter(best == "second") %>% 
+  select(subject, vertical) 
+```
+
+### Full same slope sym crit no same zero
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit_zero, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit_zero, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full same slope sym crit no same vs full same slope sym crit no same zero 
+
+```{r}
+asym_full_same_slope_sym_crit_no_same_vs_full_same_slope_sym_crit_no_same_zero <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_same_slope_sym_crit_loglik = map(fit_asym_full_same_slope_sym_crit, "logliks"),
+         fit_asym_full_same_slope_sym_crit_zero_loglik = map(fit_asym_full_same_slope_sym_crit_zero, "logliks"),
+         best = map2_chr(fit_asym_full_same_slope_sym_crit_loglik, fit_asym_full_same_slope_sym_crit_zero_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_same_slope_sym_crit_no_same_vs_full_same_slope_sym_crit_no_same_zero %>% 
+  semi_join(best_asym_full_same_slope_sym_crit_no_same) %>% 
+  group_by(best) %>% 
+  count()     
+         
+### Add to s vs d
+best_asym_full_same_slope_sym_crit_no_same_no_zero <- asym_full_same_slope_sym_crit_no_same_vs_full_same_slope_sym_crit_no_same_zero %>%
+  semi_join(best_asym_full_same_slope_sym_crit_no_same) %>% 
+  filter(best == "first") %>% 
+  select(subject, vertical) %>% 
+  mutate(best = "response")
+
+```
+
+### Full same slope sym crit same zero
+
+```{r fig.height=18, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 6) +
+  geom_point(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit_same_zero, "averages")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_asym_best %>% 
+               mutate(temp = map(fit_asym_full_same_slope_sym_crit_same_zero, "curves")) %>% 
+               select(subject, vertical, temp) %>% 
+               unnest(temp), 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Full same slope sym crit same vs full same slope sym crit same zero 
+
+```{r}
+asym_full_same_slope_sym_crit_same_vs_full_same_slope_sym_crit_same_zero <- fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(fit_asym_full_same_slope_sym_crit_same_loglik = map(fit_asym_full_same_slope_sym_crit_same, "logliks"),
+         fit_asym_full_same_slope_sym_crit_same_zero_loglik = map(fit_asym_full_same_slope_sym_crit_same_zero, "logliks"),
+         best = map2_chr(fit_asym_full_same_slope_sym_crit_same_loglik, fit_asym_full_same_slope_sym_crit_same_zero_loglik, 
+                    ~model_selection_lrt(.x, .y)$best))
+
+asym_full_same_slope_sym_crit_same_vs_full_same_slope_sym_crit_same_zero %>% 
+  semi_join(best_asym_full_same_slope_sym_crit_same) %>% 
+  group_by(best) %>% 
+  count()     
+         
+### Add to s vs d
+best_asym_full_same_slope_sym_crit_same_no_zero <- asym_full_same_slope_sym_crit_same_vs_full_same_slope_sym_crit_same_zero %>%
+  semi_join(best_asym_full_same_slope_sym_crit_same) %>% 
+  filter(best == "first") %>% 
+  select(subject, vertical) %>% 
+  mutate(best = "sensory")
+
+### Add to s vs d
+best_asym_full_same_slope_sym_crit_same_zero <- asym_full_same_slope_sym_crit_same_vs_full_same_slope_sym_crit_same_zero %>%
+  semi_join(best_asym_full_same_slope_sym_crit_same) %>% 
+  filter(best == "second") %>% 
+  select(subject, vertical) %>% 
+  mutate(best = "zero")
+
+```
+
+### Averages, curves and parameters 
+```{r fig.height=20, fig.width=15}
+
+
+fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_sym_crit_same, "averages")) %>% 
+  unnest(temp)
+  
+  
+asym_averages_s_vs_d <- 
+  (fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full, "averages")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_no_same_slope_sym_crit_same_no_zero)) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "averages")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_no_sym_crit))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "averages")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_no_same_no_zero))) %>%   
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "averages")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_no_zero))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "averages")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_zero))) 
+
+asym_curves_s_vs_d <- 
+  (fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full, "curves")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_no_same_slope_sym_crit_same_no_zero)) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "curves")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_no_sym_crit))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "curves")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_no_same_no_zero))) %>%   
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "curves")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_no_zero))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "curves")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_zero))) 
+
+asym_par_s_vs_d <- 
+  (fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full, "par")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_no_same_slope_sym_crit_same_no_zero)) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "par")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_no_sym_crit))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "par")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_no_same_no_zero))) %>%   
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "par")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_no_zero))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "par")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_zero))) 
+  
+asym_par_s_vs_d_long <- asym_par_s_vs_d %>% 
+  spread(parn,par) %>% 
+  mutate(pfirst = p1, 
+         psecond = p1 + .5 * (p5 - p4),
+         psensory = .5 * (pfirst + psecond),
+         pdecisional = pfirst - psensory)
+
+ggplot() + facet_wrap(subject ~ vertical, ncol = 4) +
+  geom_point(data = asym_averages_s_vs_d, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = asym_curves_s_vs_d, 
+            aes(x = x, y = y, color = references)) +
+  # geom_vline(data = asym_par_s_vs_d_long,
+  #            aes(xintercept = pfirst, lty = "pfirst")) +
+  # geom_vline(data = asym_par_s_vs_d_long,
+  #            aes(xintercept = psecond, lty = "psecond")) +
+    geom_vline(data = asym_par_s_vs_d_long,
+             aes(xintercept = psensory, lty = "psensory")) +
+    geom_vline(data = asym_par_s_vs_d_long,
+             aes(xintercept = psensory + pdecisional, lty = "psensory  + pdecisional")) +
+  theme_grey() + theme(legend.position = "top") 
+ 
+```
+
+
+
+#### Add all best
+```{r}
+
+best_asym <- best_asym_full_no_same_slope_sym_crit_same_no_zero %>% 
+  bind_rows(best_asym_full_same_slope_no_sym_crit) %>% 
+  bind_rows(best_asym_full_same_slope_sym_crit_no_same_no_zero) %>% 
+  bind_rows(best_asym_full_same_slope_sym_crit_same_no_zero) %>%  
+  bind_rows(best_asym_full_same_slope_sym_crit_same_zero) 
+
+
+refs <- dat_asym %>% distinct(vertical, references, reference)
+
+asym_averages_s_vs_d_best <-  asym_averages_s_vs_d %>%
+  left_join(best_asym) %>% 
+  left_join(refs)
+  
+asym_curves_s_vs_d_best <- asym_curves_s_vs_d %>% 
+  left_join(best_asym) %>% 
+  left_join(refs)
+
+asym_par_s_vs_d_best <- asym_par_s_vs_d %>% 
+  left_join(best_asym) 
+
+asym_par_s_vs_d_best_long <- asym_par_s_vs_d_long %>% 
+  left_join(best_asym) 
+
+
+asym_par_s_vs_d_best_abs <- asym_par_s_vs_d_best_long %>% 
+  select(subject, vertical, psensory, pdecisional, best) %>% 
+  gather(parn, par, - subject, - vertical, -best) %>% 
+  mutate(parn = if_else(parn == "psensory", 
+                             "Sensory\nbias", "Decisional\nbias"),
+                abs_par = abs(par))
+```
+
+### Save data
+```{r}
+save(asym_averages_s_vs_d_best, file = "logdata/asym_averages_s_vs_d_best.RData")
+save(asym_curves_s_vs_d_best, file = "logdata/asym_curves_s_vs_d_best.RData")
+save(asym_par_s_vs_d_best, file = "logdata/asym_par_s_vs_d_best.RData")
+save(asym_par_s_vs_d_best_long, file = "logdata/asym_par_s_vs_d_best_long.RData")
+save(asym_par_s_vs_d_best_abs, file = "logdata/asym_par_s_vs_d_best_abs.RData")
+```
+
+
+
+

@@ -1,0 +1,1428 @@
+---
+title: "Symmetric task "
+output: html_notebook
+---
+
+### Reading libraries and parameters
+
+```{r, message=FALSE}
+library(tidyverse)
+library(quickpsy)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+load(file = "logdata/dat2.RData")
+
+```
+
+### No two guess  
+```{r fig.height=10, fig.swidth=15}
+fun_sym_no_two_guess2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + + (1 - p[5] - p[6]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[7] + (1 - p[7] - p[8]) * pnorm(x, p[1] - p[2], p[4]))))
+
+fit_sym_no_two_guess2 <- quickpsy(dat2, orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, pini_scale, 
+                              pini_lapse, pini_lapse, pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_no_two_guess2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_no_two_guess2$curves, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Two guess
+```{r fig.height=10, fig.width=15}
+fun_sym_two_guess2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + p[7] + (1 - 2 * p[5] - p[7]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[6] + (1 - 2 * p[6] - p[7]) * pnorm(x, p[1] - p[2], p[4]))))
+
+fit_sym_two_guess2 <- quickpsy(dat2, orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_two_guess2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, pini_scale, 
+                              pini_lapse, pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_two_guess2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_two_guess2$curves, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No two guess vs two guess
+```{r}
+sym_no_two_guess_vs_two_guess2 <- model_selection_lrt(
+  fit_sym_no_two_guess2$logliks, 
+  fit_sym_two_guess2$logliks) 
+
+sym_no_two_guess_vs_two_guess2 %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_no_two_guess2 <- sym_no_two_guess_vs_two_guess2 %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+best_sym_two_guess2 <- sym_no_two_guess_vs_two_guess2 %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block)
+
+```
+
+### No two guess same slope  
+```{r fig.height=10, fig.width=15}
+fun_sym_no_two_guess_same_slope2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[4] + + (1 - p[4] - p[5]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[6] + (1 - p[6] - p[7]) * pnorm(x, p[1] - p[2], p[3]))))
+
+fit_sym_no_two_guess_same_slope2 <- quickpsy(dat2, orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess_same_slope2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, 
+                              pini_lapse, pini_lapse, pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_no_two_guess_same_slope2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_no_two_guess_same_slope2$curves, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No two guess vs no two guess same slope
+```{r}
+sym_no_two_guess_vs_no_two_guess_same_slope2 <- model_selection_lrt(
+  fit_sym_no_two_guess2$logliks, 
+  fit_sym_no_two_guess_same_slope2$logliks) 
+
+sym_no_two_guess_vs_no_two_guess_same_slope2 %>%
+  semi_join(best_sym_no_two_guess2) %>% 
+  group_by(best) %>% 
+  count()
+
+
+### Add to s vs d
+best_sym_no_two_guess_same_slope2 <- sym_no_two_guess_vs_no_two_guess_same_slope2 %>% 
+  semi_join(best_sym_no_two_guess2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block)
+
+```
+
+### Sym guess
+```{r fig.height=10, fig.width=15}
+fun_sym_guess2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + (1 - 2 * p[5]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[6] + (1 - 2 * p[6]) * pnorm(x, p[1] - p[2], p[4]))))
+
+fit_sym_guess2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, pini_scale, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_guess2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_guess2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+### Sym guess vs no sym guess
+```{r}
+sym_two_guess_vs_sym_guess2 <- model_selection_lrt(
+  fit_sym_two_guess2$logliks, 
+  fit_sym_guess2$logliks) 
+
+sym_two_guess_vs_sym_guess2 %>%
+  semi_join(best_sym_two_guess2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_guess2 <- best_sym_two_guess2
+```
+
+
+### Sym same guess
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + (1 - 2 * p[5]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[5] + (1 - 2 * p[5]) * pnorm(x, p[1] - p[2], p[4]))))
+
+fit_sym_same_guess2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject,  references, cond_per_block),
+                fun = fun_sym_same_guess2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Same guess vs no same slope
+```{r}
+sym_same_guess_vs_no_same_guess2 <- model_selection_lrt(
+  fit_sym_guess2$logliks, 
+  fit_sym_same_guess2$logliks) 
+
+sym_same_guess_vs_no_same_guess2 %>%
+  semi_join(best_sym_guess2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_no_same_guess2 <- sym_same_guess_vs_no_same_guess2 %>% 
+  semi_join(best_sym_guess2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+best_sym_same_guess2 <- sym_same_guess_vs_no_same_guess2 %>% 
+  semi_join(best_sym_guess2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block)
+
+```
+
+### No same guess same slope
+```{r fig.height=10, fig.width=15}
+fun_sym_guess_same_slope2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[5] + (1 - 2 * p[5]) * pnorm(x, p[1] - p[2], p[3]))))
+
+fit_sym_guess_same_slope2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess_same_slope2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_guess_same_slope2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_guess_same_slope2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+### No same guess vs no same guess same slope
+```{r}
+sym_same_guess_vs_same_guess_same_slope2 <- model_selection_lrt(
+  fit_sym_guess2$logliks, 
+  fit_sym_guess_same_slope2$logliks) 
+
+sym_same_guess_vs_same_guess_same_slope2 %>%
+  semi_join(best_sym_no_same_guess2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_no_same_guess_same_slope2 <- best_sym_no_same_guess2
+  
+```
+
+### Absent lapses
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1] - p[2], p[4]))))
+
+fit_sym_absent_lapses2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses vs no absent lapses
+```{r}
+sym_absent_lapses_vs_no_absent_lapses2 <- model_selection_lrt(
+  fit_sym_same_guess2$logliks, 
+  fit_sym_absent_lapses2$logliks) 
+
+sym_absent_lapses_vs_no_absent_lapses2 %>%
+  semi_join(best_sym_same_guess2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_no_absent_lapses2 <- sym_absent_lapses_vs_no_absent_lapses2 %>% 
+  semi_join(best_sym_same_guess2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+best_sym_absent_lapses2 <- sym_absent_lapses_vs_no_absent_lapses2 %>% 
+  semi_join(best_sym_same_guess2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block)
+
+```
+
+### Sym same guess same slope 
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_same_slope2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1] - p[2], p[3]))))
+
+fit_sym_same_guess_same_slope2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_same_slope2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_same_slope2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_same_slope2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No absent lapses vs no absent lapses same slope
+```{r}
+sym_no_absent_lapses_vs_no_absent_lapses_same_slope2 <- model_selection_lrt(
+  fit_sym_same_guess2$logliks, 
+  fit_sym_same_guess_same_slope2$logliks) 
+
+sym_no_absent_lapses_vs_no_absent_lapses_same_slope2 %>%
+  semi_join(best_sym_no_absent_lapses2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_no_absent_lapses_no_same_slope2 <- sym_no_absent_lapses_vs_no_absent_lapses_same_slope2 %>% 
+  semi_join(best_sym_no_absent_lapses2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+### Add to s vs d
+best_sym_no_absent_lapses_same_slope2 <- sym_no_absent_lapses_vs_no_absent_lapses_same_slope2 %>% 
+  semi_join(best_sym_no_absent_lapses2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block)
+
+```
+
+### Absent lapses same slope 
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_same_slope2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1] + p[2], p[3]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1] - p[2], p[3]))))
+
+fit_sym_absent_lapses_same_slope2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_origin, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_same_slope2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_same_slope2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses vs absent lapses same slope
+```{r}
+sym_absent_lapses_vs_absent_lapses_same_slope2 <- model_selection_lrt(
+  fit_sym_absent_lapses2$logliks, 
+  fit_sym_absent_lapses_same_slope2$logliks) 
+
+sym_absent_lapses_vs_absent_lapses_same_slope2 %>%
+  semi_join(best_sym_absent_lapses2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_absent_lapses_no_same_slope2 <- sym_absent_lapses_vs_absent_lapses_same_slope2 %>% 
+  semi_join(best_sym_absent_lapses2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+### Add to s vs d
+best_sym_absent_lapses_same_slope2 <- sym_absent_lapses_vs_absent_lapses_same_slope2 %>% 
+  semi_join(best_sym_absent_lapses2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block)
+
+```
+
+
+### Averages, curves and parameters (checking)
+```{r}
+sym_averages_s_vs_d_test2 <- 
+  (fit_sym_no_two_guess_same_slope2$averages %>% semi_join(best_sym_no_two_guess_same_slope2))
+
+sym_curves_s_vs_d_test2 <- 
+  (fit_sym_no_two_guess_same_slope2$curves %>% semi_join(best_sym_no_two_guess_same_slope2))
+
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = sym_averages_s_vs_d_test2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_test2, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+```{r}
+sym_averages_s_vs_d_test2 <- 
+  (fit_sym_guess_same_slope2$averages %>% semi_join(best_sym_no_same_guess2))
+
+sym_curves_s_vs_d_test2 <- 
+  (fit_sym_guess_same_slope2$curves %>% semi_join(best_sym_no_same_guess2))
+
+
+ggplot() + facet_wrap(subject ~ cond_per_block) +
+  geom_point(data = sym_averages_s_vs_d_test2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_test2, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+```{r}
+sym_averages_s_vs_d_test2 <- 
+  (fit_sym_same_guess2$averages %>% semi_join(best_sym_no_absent_lapses_no_same_slope2))
+
+sym_curves_s_vs_d_test2 <- 
+  (fit_sym_same_guess2$curves %>% semi_join(best_sym_no_absent_lapses_no_same_slope2))
+
+
+ggplot() + facet_wrap(subject ~ cond_per_block) +
+  geom_point(data = sym_averages_s_vs_d_test2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_test2, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+```{r}
+sym_averages_s_vs_d_test2 <- 
+  (fit_sym_same_guess_same_slope2$averages %>% semi_join(best_sym_no_absent_lapses_same_slope2))
+
+sym_curves_s_vs_d_test2 <- 
+  (fit_sym_same_guess_same_slope2$curves %>% semi_join(best_sym_no_absent_lapses_same_slope2))
+
+
+ggplot() + facet_wrap(subject ~ cond_per_block) +
+  geom_point(data = sym_averages_s_vs_d_test2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_test2, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+```{r}
+sym_averages_s_vs_d_test2 <- 
+  (fit_sym_absent_lapses2$averages %>% semi_join(best_sym_absent_lapses_no_same_slope2))
+
+sym_curves_s_vs_d_test2 <- 
+  (fit_sym_absent_lapses2$curves %>% semi_join(best_sym_absent_lapses_no_same_slope2))
+
+
+ggplot() + facet_wrap(subject ~ cond_per_block) +
+  geom_point(data = sym_averages_s_vs_d_test2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_test2, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+```{r fig.height=8, fig.width=8}
+sym_averages_s_vs_d_test2 <- 
+  (fit_sym_absent_lapses_same_slope2$averages %>% semi_join(best_sym_absent_lapses_same_slope2))
+
+sym_curves_s_vs_d_test2 <- 
+  (fit_sym_absent_lapses_same_slope2$curves %>% semi_join(best_sym_absent_lapses_same_slope2))
+
+
+ggplot() + facet_wrap(subject ~ cond_per_block) +
+  geom_point(data = sym_averages_s_vs_d_test2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_test2, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Averages, curves and parameters 
+```{r fig.height=15, fig.width=15}
+sym_averages_s_vs_d2 <- 
+  (fit_sym_no_two_guess_same_slope2$averages %>% semi_join(best_sym_no_two_guess_same_slope2)) %>% 
+  bind_rows((fit_sym_guess_same_slope2$averages %>% semi_join(best_sym_no_same_guess2))) %>% 
+  bind_rows((fit_sym_same_guess2$averages %>% semi_join(best_sym_no_absent_lapses_no_same_slope2))) %>% 
+  bind_rows((fit_sym_same_guess_same_slope2$averages %>% semi_join(best_sym_no_absent_lapses_same_slope2))) %>% 
+  bind_rows((fit_sym_absent_lapses2$averages %>% semi_join(best_sym_absent_lapses_no_same_slope2))) %>% 
+  bind_rows((fit_sym_absent_lapses_same_slope2$averages %>% semi_join(best_sym_absent_lapses_same_slope2)))
+
+sym_curves_s_vs_d2 <- 
+  (fit_sym_no_two_guess_same_slope2$curves %>% semi_join(best_sym_no_two_guess_same_slope2)) %>% 
+  bind_rows((fit_sym_guess_same_slope2$curves %>% semi_join(best_sym_no_same_guess2))) %>% 
+  bind_rows((fit_sym_same_guess2$curves %>% semi_join(best_sym_no_absent_lapses_no_same_slope2))) %>% 
+  bind_rows((fit_sym_same_guess_same_slope2$curves %>% semi_join(best_sym_no_absent_lapses_same_slope2))) %>% 
+  bind_rows((fit_sym_absent_lapses2$curves %>% semi_join(best_sym_absent_lapses_no_same_slope2))) %>% 
+  bind_rows((fit_sym_absent_lapses_same_slope2$curves %>% semi_join(best_sym_absent_lapses_same_slope2)))
+
+sym_par_s_vs_d2 <- 
+  (fit_sym_no_two_guess_same_slope2$par %>% semi_join(best_sym_no_two_guess_same_slope2)) %>% 
+  bind_rows((fit_sym_guess_same_slope2$par %>% semi_join(best_sym_no_same_guess2))) %>% 
+  bind_rows((fit_sym_same_guess2$par %>% semi_join(best_sym_no_absent_lapses_no_same_slope2))) %>% 
+  bind_rows((fit_sym_same_guess_same_slope2$par %>% semi_join(best_sym_no_absent_lapses_same_slope2))) %>% 
+  bind_rows((fit_sym_absent_lapses2$par %>% semi_join(best_sym_absent_lapses_no_same_slope2))) %>% 
+  bind_rows((fit_sym_absent_lapses_same_slope2$par %>% semi_join(best_sym_absent_lapses_same_slope2)))
+
+
+sym_par_s_vs_d_long2 <- sym_par_s_vs_d2 %>% 
+  spread(parn, par) 
+
+ggplot() + facet_wrap(subject ~ cond_per_block) +
+  geom_point(data = sym_averages_s_vs_d2, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d2, 
+            aes(x = x, y = y, color = references)) +
+  geom_vline(data = sym_par_s_vs_d_long2,
+           aes(xintercept = p1, lty = "p1")) +
+    geom_vline(data = sym_par_s_vs_d_long2, 
+           aes(xintercept = p1 + p2, lty = "p1 +p2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No two guess same slope zero
+```{r fig.height=10, fig.width=15}
+fun_sym_no_two_guess_same_slope_zero2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[2] + + (1 - p[2] - p[3]) * pnorm(x, 0, p[1]), 
+    function(x, p) p[4] + (1 - p[4] - p[5]) * pnorm(x, 0, p[1]))))
+
+fit_sym_no_two_guess_same_slope_zero2 <- quickpsy(dat2, orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess_same_slope_zero2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_scale, 
+                              pini_lapse, pini_lapse, pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_no_two_guess_same_slope_zero2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_no_two_guess_same_slope_zero2$curves, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No two guess same slope zero vs no two guess same slope
+```{r}
+sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_zero2 <- model_selection_lrt(
+  fit_sym_no_two_guess_same_slope2$logliks, 
+  fit_sym_no_two_guess_same_slope_zero2$logliks) 
+
+sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_zero2 %>%
+  semi_join(best_sym_no_two_guess_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_no_two_guess_same_slope_no_zero2 <- sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_zero2 %>% 
+  semi_join(best_sym_no_two_guess_same_slope2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+### Add to s vs d
+best_sym_no_two_guess_same_slope_zero2 <- sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_zero2 %>% 
+  semi_join(best_sym_no_two_guess_same_slope2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "zero")
+
+```
+
+### No two guess same slope s  
+```{r fig.height=10, fig.width=15}
+fun_sym_no_two_guess_same_slope_s2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + + (1 - p[3] - p[4]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[5] + (1 - p[5] - p[6]) * pnorm(x, p[1], p[2]))))
+
+fit_sym_no_two_guess_same_slope_s2 <- quickpsy(dat2, orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess_same_slope_s2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, 
+                              pini_lapse, pini_lapse, pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_no_two_guess_same_slope_s2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_no_two_guess_same_slope_s2$curves, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No two guess same slope vs no two guess same slope s
+```{r}
+sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_s2 <- model_selection_lrt(
+  fit_sym_no_two_guess_same_slope2$logliks, 
+  fit_sym_no_two_guess_same_slope_s2$logliks) 
+
+sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_s2 %>%
+  semi_join(best_sym_no_two_guess_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+```
+
+### No two guess same slope d  
+```{r fig.height=10, fig.width=15}
+fun_sym_no_two_guess_same_slope_d2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + + (1 - p[3] - p[4]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[5] + (1 - p[5] - p[6]) * pnorm(x, -p[1], p[2]))))
+
+fit_sym_no_two_guess_same_slope_d2 <- quickpsy(dat2, orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess_same_slope_d2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, 
+                              pini_lapse, pini_lapse, pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_no_two_guess_same_slope_d2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_no_two_guess_same_slope_d2$curves, 
+            aes(x = x, y = y, color = references)) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No two guess same slope vs no two guess same slope d
+```{r}
+sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_d2 <- model_selection_lrt(
+  fit_sym_no_two_guess_same_slope2$logliks, 
+  fit_sym_no_two_guess_same_slope_d2$logliks) 
+
+sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_d2 %>%
+  semi_join(best_sym_no_two_guess_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_no_two_guess_same_slope_no_zero_full2 <- sym_no_two_guess_same_slope_vs_no_two_guess_same_slope_d2 %>% 
+  semi_join(best_sym_no_two_guess_same_slope_no_zero2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "full")
+
+```
+
+### No same guess same slope zero
+```{r fig.height=10, fig.width=15}
+fun_sym_guess_same_slope_zero2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[2] + (1 - 2 * p[2]) * pnorm(x, 0, p[1]), 
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, 0, p[1]))))
+
+fit_sym_guess_same_slope_zero2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess_same_slope_zero2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_scale, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_guess_same_slope_zero2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_guess_same_slope_zero2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No same guess same slope vs no same guess same slope zero
+```{r}
+sym_guess_same_slope_vs_sym_guess_same_slope_zero2 <- model_selection_lrt(
+  fit_sym_guess_same_slope2$logliks, 
+  fit_sym_guess_same_slope_zero2$logliks) 
+
+sym_guess_same_slope_vs_sym_guess_same_slope_zero2 %>%
+  semi_join(best_sym_no_same_guess2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_guess_same_slope_no_zero2 <- sym_guess_same_slope_vs_sym_guess_same_slope_zero2 %>% 
+  semi_join(best_sym_no_same_guess2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) 
+
+
+```
+
+### No same guess same slope s
+```{r fig.height=18, fig.width=15}
+fun_sym_guess_same_slope_s2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1], p[2]))))
+
+fit_sym_guess_same_slope_s2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess_same_slope_s2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_guess_same_slope_s2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_guess_same_slope_s2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No same guess same slope no zero vs no same guess same slope no zero s
+```{r}
+sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_s2 <- model_selection_lrt(
+  fit_sym_guess_same_slope2$logliks, 
+  fit_sym_guess_same_slope_s2$logliks) 
+
+sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_s2 %>%
+  semi_join(best_sym_guess_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_guess_same_slope_no_zero_no_s2 <- sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_s2 %>% 
+  semi_join(best_sym_guess_same_slope_no_zero2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) 
+
+best_sym_guess_same_slope_no_zero_s2 <- sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_s2 %>% 
+  semi_join(best_sym_guess_same_slope_no_zero2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) 
+
+```
+
+### No same guess same slope d
+```{r fig.height=10, fig.width=15}
+fun_sym_guess_same_slope_d2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, -p[1], p[2]))))
+
+fit_sym_guess_same_slope_d2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess_same_slope_d2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_guess_same_slope_d2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_guess_same_slope_d2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### No same guess same slope no zero vs no same guess same slope no zero d
+```{r}
+sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_d2 <- model_selection_lrt(
+  fit_sym_guess_same_slope2$logliks, 
+  fit_sym_guess_same_slope_d2$logliks) 
+
+sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_d2 %>%
+  semi_join(best_sym_guess_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_guess_same_slope_no_zero_full2 <- sym_guess_same_slope_no_zero_vs_guess_same_slope_no_zero_d2 %>% 
+  semi_join(best_sym_guess_same_slope_no_zero2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "full")
+
+```
+
+### Sym same guess no same slope zero
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_zero2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, 0, p[1]), 
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, 0, p[2]))))
+
+fit_sym_same_guess_zero2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_zero2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_scale, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_zero2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_zero2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Same guess no same slope no zero vs Same guess no same slope zero
+```{r}
+sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_zero2 <- model_selection_lrt(
+  fit_sym_same_guess2$logliks, 
+  fit_sym_same_guess_zero2$logliks) 
+
+sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_zero2 %>%
+  semi_join(best_sym_no_absent_lapses_no_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_same_guess_no_same_slope_no_zero <- sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_zero2 %>% 
+  semi_join(best_sym_no_absent_lapses_no_same_slope2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+### Add to s vs d
+best_sym_same_guess_no_same_slope_zero2 <- sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_zero2 %>% 
+  semi_join(best_sym_no_absent_lapses_no_same_slope2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "zero")
+
+```
+
+### Sym same guess no same slope no zero s
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_no_zero_s2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1], p[3]))))
+
+fit_sym_same_guess_no_zero_s2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_no_zero_s2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_no_zero_s2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_no_zero_s2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+### Same guess no same slope no zero vs Same guess no same slope no zero s
+```{r}
+sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_no_zero_s2 <- model_selection_lrt(
+  fit_sym_same_guess2$logliks, 
+  fit_sym_same_guess_no_zero_s2$logliks) 
+
+sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_no_zero_s2 %>%
+  semi_join(best_sym_same_guess_no_same_slope_no_zero) %>% 
+  group_by(best) %>% 
+  count()
+
+```
+
+### Sym same guess no same slope no zero d
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_no_zero_d2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[4] + (1 - 2 * p[4]) * pnorm(x, -p[1], p[3]))))
+
+fit_sym_same_guess_no_zero_d2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_no_zero_d2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_no_zero_d2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_no_zero_d2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Same guess no same slope no zero vs Same guess no same slope no zero d
+```{r}
+sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_no_zero_d2 <- model_selection_lrt(
+  fit_sym_same_guess2$logliks, 
+  fit_sym_same_guess_no_zero_d2$logliks) 
+
+sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_no_zero_d2%>%
+  semi_join(best_sym_same_guess_no_same_slope_no_zero) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_same_guess_no_same_slope_no_zero_s2 <- sym_same_guess_no_same_slope_no_zero_vs_same_guess_no_same_slope_no_zero_d2 %>% 
+  semi_join(best_sym_same_guess_no_same_slope_no_zero) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) %>%  
+  mutate(best = "sensory")
+
+
+```
+
+### Sym same guess same slope zero 
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_same_slope_zero2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[2] + (1 - 2 * p[2]) * pnorm(x, 0, p[1]), 
+    function(x, p) p[2] + (1 - 2 * p[2]) * pnorm(x, 0, p[1]))))
+
+fit_sym_same_guess_same_slope_zero2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_same_slope_zero2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_same_slope_zero2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_same_slope_zero2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Same guess same slope no zero vs same guess same slope zero
+```{r}
+sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_zero2 <- model_selection_lrt(
+  fit_sym_same_guess_same_slope2$logliks, 
+  fit_sym_same_guess_same_slope_zero2$logliks) 
+
+sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_zero2 %>%
+  semi_join(best_sym_no_absent_lapses_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_same_guess_same_slope_no_zero2 <- sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_zero2 %>% 
+  semi_join(best_sym_no_absent_lapses_same_slope2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) 
+
+
+```
+
+### Sym same guess same slope no zero s
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_same_slope_no_zero_s2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, p[1], p[2]))))
+
+fit_sym_same_guess_same_slope_no_zero_s2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_same_slope_no_zero_s2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_same_slope_no_zero_s2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_same_slope_no_zero_s2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Same guess same slope no zero vs same guess same slope no zero s
+```{r}
+sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_no_zero_s2 <- model_selection_lrt(
+  fit_sym_same_guess_same_slope2$logliks, 
+  fit_sym_same_guess_same_slope_no_zero_s2$logliks) 
+
+sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_no_zero_s2 %>%
+  semi_join(best_sym_same_guess_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+```
+
+### Sym same guess same slope no zero d
+```{r fig.height=10, fig.width=15}
+fun_sym_same_guess_same_slope_no_zero_d2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, p[1], p[2]), 
+    function(x, p) p[3] + (1 - 2 * p[3]) * pnorm(x, -p[1], p[2]))))
+
+fit_sym_same_guess_same_slope_no_zero_d2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_same_slope_no_zero_d2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, 
+                              pini_lapse),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_same_guess_same_slope_no_zero_d2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_same_guess_same_slope_no_zero_d2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Same guess same slope no zero vs same guess same slope no zero d
+```{r}
+sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_no_zero_d2 <- model_selection_lrt(
+  fit_sym_same_guess_same_slope2$logliks, 
+  fit_sym_same_guess_same_slope_no_zero_d2$logliks) 
+
+sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_no_zero_d2 %>%
+  semi_join(best_sym_same_guess_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_same_guess_same_slope_no_zero_full2 <- sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_no_zero_s2 %>% 
+  semi_join(best_sym_same_guess_same_slope_no_zero2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "full")
+
+### Add to s vs d
+best_sym_same_guess_same_slope_no_zero_s2 <- sym_same_guess_same_slope_no_zero_vs_same_guess_same_slope_no_zero_s2 %>% 
+  semi_join(best_sym_same_guess_same_slope_no_zero2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "sensory")
+
+```
+
+### Absent lapses no same slope zero 
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_no_same_slope_zero2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, 0, p[1]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, 0, p[2]))))
+
+fit_sym_absent_lapses_no_same_slope_zero2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_no_same_slope_zero2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_scale, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_no_same_slope_zero2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_no_same_slope_zero2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses no same slope   vs absent lapses no same slope zero 
+```{r}
+sym_absent_lapses_no_same_slope_vs_absent_lapses_no_same_slope_zero2 <- model_selection_lrt(
+  fit_sym_absent_lapses2$logliks, 
+  fit_sym_absent_lapses_no_same_slope_zero2$logliks) 
+
+sym_absent_lapses_no_same_slope_vs_absent_lapses_no_same_slope_zero2 %>%
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+```
+
+### Absent lapses no same slope no zero s
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_no_same_slope_s2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1], p[2]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1], p[3]))))
+
+fit_sym_absent_lapses_no_same_slope_s2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_no_same_slope_s2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_no_same_slope_s2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_no_same_slope_s2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses no same slope no zero vs absent lapses no same slope no zero s
+```{r}
+sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_s2 <- model_selection_lrt(
+  fit_sym_absent_lapses2$logliks, 
+  fit_sym_absent_lapses_no_same_slope_s2$logliks) 
+
+sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_s2 %>%
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_sym_absent_lapses_no_same_slope_no_zero_no_s2 <- sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_s2 %>% 
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+### Add to s vs d
+best_sym_absent_lapses_no_same_slope_no_zero_s2 <- sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_s2 %>% 
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "sensory")
+
+```
+
+### Absent lapses no same slope no zero d
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_no_same_slope_d2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1], p[2]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, -p[1], p[3]))))
+
+fit_sym_absent_lapses_no_same_slope_d2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_no_same_slope_d2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_no_same_slope_d2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_no_same_slope_d2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses no same slope no zero vs absent lapses no same slope no zero d
+```{r}
+sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_d2 <- model_selection_lrt(
+  fit_sym_absent_lapses2$logliks, 
+  fit_sym_absent_lapses_no_same_slope_d2$logliks) 
+
+sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_d2 %>%
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+### Add to s vs d
+best_sym_absent_lapses_no_same_slope_no_zero_full2 <- sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_d2 %>% 
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  anti_join(best_sym_absent_lapses_no_same_slope_no_zero_s2, by = c("subject", "cond_per_block")) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "full")
+
+### Add to s vs d
+best_sym_absent_lapses_no_same_slope_no_zero_d2 <- sym_absent_lapses_no_same_slope_no_zero_vs_absent_lapses_no_same_slope_no_zero_d2 %>% 
+  semi_join(best_sym_absent_lapses_no_same_slope2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "decision")
+
+```
+
+
+### Absent lapses same slope zero
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_same_slope_zero2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, 0, p[1]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, 0, p[1]))))
+
+fit_sym_absent_lapses_same_slope_zero2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_zero2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_same_slope_zero2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_same_slope_zero2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses same slope no zero vs absent lapses same slope zero
+```{r}
+sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_zero2 <- model_selection_lrt(
+  fit_sym_absent_lapses_same_slope2$logliks, 
+  fit_sym_absent_lapses_same_slope_zero2$logliks) 
+
+sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_zero2 %>%
+  semi_join(best_sym_absent_lapses_same_slope2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_absent_lapses_same_slope_no_zero2 <- sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_zero2 %>% 
+  semi_join(best_sym_absent_lapses_same_slope2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block)
+
+### Add to s vs d
+best_absent_lapses_same_slope_zero2 <- sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_zero2 %>% 
+  semi_join(best_sym_absent_lapses_same_slope2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "zero")
+
+```
+
+### Absent lapses same slope no zero s
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_same_slope_no_zero_s2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1], p[2]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1], p[2]))))
+
+fit_sym_absent_lapses_same_slope_no_zero_s2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_no_zero_s2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_same_slope_no_zero_s2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_same_slope_no_zero_s2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses same slope no zero vs absent lapses same slope no zero s
+```{r}
+sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_s2 <- model_selection_lrt(
+  fit_sym_absent_lapses_same_slope2$logliks, 
+  fit_sym_absent_lapses_same_slope_no_zero_s2$logliks) 
+
+sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_s2 %>%
+  semi_join(best_absent_lapses_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+best_absent_lapses_same_slope_no_zero_no_s2 <- sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_s2 %>% 
+  semi_join(best_absent_lapses_same_slope_no_zero2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) 
+
+
+best_absent_lapses_same_slope_no_zero_s2 <- sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_s2 %>% 
+  semi_join(best_absent_lapses_same_slope_no_zero2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) 
+
+
+```
+
+### Absent lapses same slope no zero d
+```{r fig.height=10, fig.width=15}
+fun_sym_absent_lapses_same_slope_no_zero_d2 <-  dat2 %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, p[1], p[2]), 
+    function(x, p) 0.01 + (1 - 2 * 0.01) * pnorm(x, -p[1], p[2]))))
+
+fit_sym_absent_lapses_same_slope_no_zero_d2 <- quickpsy(dat2, 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_no_zero_d2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, pini_scale),
+                bootstrap = "none")
+
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
+  geom_point(data = fit_sym_absent_lapses_same_slope_no_zero_d2$averages, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = fit_sym_absent_lapses_same_slope_no_zero_d2$curves, 
+            aes(x = x, y = y, color = references, lty = "all")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Absent lapses same slope no zero vs absent lapses same slope no zero d
+```{r}
+sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_d2 <- model_selection_lrt(
+  fit_sym_absent_lapses_same_slope2$logliks, 
+  fit_sym_absent_lapses_same_slope_no_zero_d2$logliks) 
+
+sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_d2 %>%
+  semi_join(best_absent_lapses_same_slope_no_zero2) %>% 
+  group_by(best) %>% 
+  count()
+
+
+### Add to s vs d
+best_absent_lapses_same_slope_no_zero_no_s2 <- sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_s2 %>% 
+  semi_join(best_absent_lapses_same_slope_no_zero2) %>% 
+  filter(best == "first") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "full")
+
+### Add to s vs d
+best_absent_lapses_same_slope_no_zero_s2 <- sym_absent_lapses_same_slope_no_zero_vs_absent_lapses_same_slope_no_zero_s2 %>% 
+  semi_join(best_absent_lapses_same_slope_no_zero2) %>% 
+  filter(best == "second") %>% 
+  select(subject, cond_per_block) %>% 
+  mutate(best = "sensory")
+
+
+
+```
+
+
+#### Add all best
+```{r}
+best2 <- best_sym_no_two_guess_same_slope_zero2 %>% 
+  bind_rows(best_sym_no_two_guess_same_slope_no_zero_full2) %>% 
+  bind_rows(best_sym_guess_same_slope_no_zero_full2) %>% 
+  bind_rows(best_sym_same_guess_no_same_slope_zero2) %>%  
+  bind_rows(best_sym_same_guess_no_same_slope_no_zero_s2) %>%  
+  bind_rows(best_sym_same_guess_same_slope_no_zero_full2) %>% 
+  bind_rows(best_sym_same_guess_same_slope_no_zero_s2) %>% 
+  bind_rows(best_sym_absent_lapses_no_same_slope_no_zero_s2) %>% 
+  bind_rows(best_sym_absent_lapses_no_same_slope_no_zero_full2) %>% 
+  bind_rows(best_sym_absent_lapses_no_same_slope_no_zero_d2) %>% 
+  bind_rows(best_absent_lapses_same_slope_zero2) %>% 
+  bind_rows(best_absent_lapses_same_slope_no_zero_no_s2) %>% 
+  bind_rows(best_absent_lapses_same_slope_no_zero_s2) 
+
+
+
+
+
+sym_averages_s_vs_d_best2 <-  sym_averages_s_vs_d2 %>%
+  left_join(best2) 
+  
+sym_curves_s_vs_d_best2 <- sym_curves_s_vs_d2 %>% 
+  left_join(best2)
+
+sym_par_s_vs_d_best2 <- sym_par_s_vs_d2 %>% 
+  left_join(best2) 
+
+sym_par_s_vs_d_best_long2 <- sym_par_s_vs_d_best2 %>% 
+  select(subject, cond_per_block, par, best, parn) %>% 
+  spread(parn, par) 
+
+sym_par_s_vs_d_best_abs2 <- sym_par_s_vs_d_best2 %>% 
+              filter(parn == "p1" | parn == "p2") %>% 
+              mutate(parn = if_else(parn == "p1", 
+                             "Sensory\nbias", "Decisional\nbias"),
+                     abs_par = abs(par))
+
+```
+
+### Save data
+```{r}
+save(sym_averages_s_vs_d_best, file = "logdata/sym_averages_s_vs_d_best2.Rdata")
+save(sym_curves_s_vs_d_best, file = "logdata/sym_curves_s_vs_d_best2.RData")
+save(sym_par_s_vs_d_best, file = "logdata/sym_par_s_vs_d_best_long2.RData")
+save(sym_par_s_vs_d_best_long, file = "logdata/sym_par_s_vs_d_best_abs2.RData")
+
+```
+
+
+

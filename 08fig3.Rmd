@@ -1,0 +1,180 @@
+---
+title: "Figure 3"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+### Reading libraries and parameters. Preparing the data
+
+```{r, message=FALSE}
+library(tidyverse)
+library(quickpsy)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+
+load(file = "logdata/sym_par_s_vs_d_best.RData")
+load(file = "logdata/asym_par_s_vs_d_best.RData")
+load(file = "logdata/sym_par_s_vs_d_best_abs.RData")
+load(file = "logdata/asym_par_s_vs_d_best_abs.RData")
+```
+
+```{r}
+abs_biases <- (sym_par_s_vs_d_best_abs %>% 
+  mutate(task = "sym")) %>% 
+  bind_rows(
+    asym_par_s_vs_d_best_abs %>% 
+  mutate(task = "asym")
+  ) %>% 
+  mutate(parn_task = paste(parn, task))
+
+p_bias_abs <- ggplot(data = abs_biases, 
+             aes(x = parn_task, y = abs_par))+
+  geom_point(position = position_jitter(width = .15), 
+             shape = 1, alpha = .5, size = .8) +
+  stat_summary(fun.data = "mean_cl_boot",  geom = "crossbar", size = .15) + 
+  labs(y = "Abs. value bias (deg)", x = "", title = "") +
+ 
+ # scale_x_discrete(breaks =c("Decisional\nbias","Sensory\nbias")) +
+  scale_y_continuous(breaks = seq(0, 1, .5)) +
+  coord_cartesian(ylim = c(0, 1.07)) +
+  theme(axis.line = element_line(size = size_line), 
+        axis.ticks = element_line(size = size_line),
+        axis.title.x = element_blank())
+      
+p_bias_abs
+```
+
+
+
+```{r}
+
+sensory_bias_sym <- sym_par_s_vs_d_best %>% 
+  filter(parn == "p1") %>% 
+  rename(sym = par, best_sym = best) %>% 
+  select(-parn)
+
+sensory_bias_asym <- asym_par_s_vs_d_best %>% 
+  filter(parn == "p1") %>% 
+  rename(asym = par, best_asym = best) %>% 
+  select(-parn)
+
+sensory_bias <- sensory_bias_sym %>% 
+  left_join(sensory_bias_asym) %>% 
+  filter(!is.na(asym))
+
+cor.test(sensory_bias$sym, sensory_bias$asym)
+
+
+p_corr <- ggplot(data = sensory_bias %>% 
+                   mutate(best_asym = if_else(best_asym == "no sym crit",
+                                              "full", best_asym)), 
+                 aes(x = asym, y = sym) ) +
+  geom_abline(slope = 1, intercept = 0, lty = 2, size = size_line) +
+  geom_vline(xintercept = 0, lty = 2, size = size_line) +
+  geom_hline(yintercept = 0, lty = 2, size = size_line) +
+  geom_point(aes(x = asym + 0.03, y = sym - 0.03, color = best_sym,
+                 shape = "Asymmetric"), 
+             size = 2, alpha = .75) +
+  geom_point(aes(x = asym - 0.03, y = sym + 0.03, color = best_asym,
+                 shape = "Symmetric"), 
+              size = 2, alpha = .75) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.75) +
+  scale_shape_manual(values = c(15, 16)) +
+  scale_color_manual(values = c(col_decision, col_full, 
+                               col_response, col_sensory, col_no_bias),
+                   breaks = c("zero", "sensory", 
+                              "decision", "response","full"),
+                   labels = c(text_zero, text_sensory, 
+                              text_decision, text_response, text_full)) +
+  coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
+  labs(x = expression(paste("Sensory bias ", bold("asymmetric"), " task (deg)")),
+       y = expression(paste("Sensory bias ", bold("symmetric"), " task (deg)")),
+       shape = "Task", 
+       color = text_best_model) +
+  theme(axis.line = element_line(size = size_line), 
+        axis.ticks = element_line(size = size_line), 
+        legend.key.height = unit(.85, "lines")) +
+  guides(shape = guide_legend(reverse = TRUE))
+
+p_corr
+```
+
+
+
+```{r}
+
+sensory_bias_sym_rot <- sensory_bias_sym %>% 
+  select(-best_sym) %>%
+  spread(vertical, sym, sep = "_") %>% 
+  mutate(task = "Symmetric")
+
+sensory_bias_asym_rot <- sensory_bias_asym %>% 
+  select(-best_asym) %>%
+  spread(vertical, asym, sep = "_") %>% 
+  mutate(task = "Asymmetric")
+
+sensory_bias_rot <- sensory_bias_sym_rot %>% 
+  bind_rows(sensory_bias_asym_rot)
+
+cor.test(sensory_bias_rot %>% 
+           filter(task == "Symmetric") %>% 
+           pull(vertical_FALSE),
+         sensory_bias_rot %>% 
+           filter(task == "Symmetric") %>% 
+           pull(vertical_TRUE)
+         )
+
+cor.test(sensory_bias_rot %>% 
+           filter(task == "Asymmetric") %>% 
+           pull(vertical_FALSE),
+         sensory_bias_rot %>% 
+           filter(task == "Asymmetric") %>% 
+           pull(vertical_TRUE)
+         )
+  
+
+p_corr_rot <- ggplot(data = sensory_bias_rot, 
+                 aes(x = vertical_TRUE, y = vertical_FALSE, color = task, shape = task)) +
+  geom_abline(slope = 1, intercept = 0, lty = 2, size = size_line) +
+  geom_vline(xintercept = 0, lty = 2, size = size_line) +
+  geom_hline(yintercept = 0, lty = 2, size = size_line) +
+  geom_point(size = 2, alpha = .75) +
+  scale_shape_manual(values = c(15, 16)) +
+  geom_smooth(method = "lm", se = FALSE, size = .75, alpha = .75) +
+  coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
+  scale_color_manual(values = c("#984ea3", "#ff7f00")) +
+  theme(axis.line = element_line(size = size_line), 
+        axis.ticks = element_line(size = size_line),
+        legend.key.height = unit(.75, "lines"),
+        legend.position = c(.9, .18)) +
+  labs(x = expression(paste("Sensory bias for ", bold("vertical"), " grating (deg)")),
+       y = expression(paste("Sensory bias for ", bold("horizontal"), " grating (deg)")),
+       shape = "Task", color = "Task") +
+  guides(shape = guide_legend(reverse = TRUE),
+         color = guide_legend(reverse = TRUE))
+
+p_corr_rot
+```
+
+
+```{r fig.height=10, fig.width=6}
+p_fig_3 <- plot_grid(
+  p_corr,
+  p_corr_rot,
+  labels = "AUTO",
+  hjust = 0, 
+  vjust = 1.1,
+  align = "h",
+  rel_widths = c(.6, .4)
+)
+
+save_plot('figures/figure3.pdf', p_fig_3, 
+          base_width = two_column_width,
+          base_height =  0.34 * two_column_width)
+```
+

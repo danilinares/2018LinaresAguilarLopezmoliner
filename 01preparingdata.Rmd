@@ -1,0 +1,154 @@
+---
+title: "Reading and preparing the data"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+### Reading libraries and parameters. 
+
+```{r, message=FALSE}
+library(tidyverse)
+library(quickpsy)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+```
+
+### Preparing the data
+```{r}
+dat_all <- read_csv('data/exp1.csv')  %>%
+  select(subject, session, orLarge, orSmall, task, rt, response) %>%
+  rename(reference = orLarge, orientation = orSmall) %>% 
+  mutate(
+    response = if_else(
+    (reference == 0 & response == "right") |
+    (reference == 90 & response == "down") |
+    (reference == 180 & response == "left") |
+    (reference == 270 & response == "up") |
+    (response == "m"), 1, 0),
+    vertical = if_else(reference == 0 | reference == 180, TRUE, FALSE),
+    reference = recode(reference, `0` = "Top", `90` = "Right", 
+                     `180` = "Bottom", `270` = "Left"),
+    references = if_else(reference == "Top" | reference == "Right", "TR", "BL"),
+    task = if_else(task == "comp", "sym", "asym"))
+  
+dat_all_sym <- dat_all %>% filter(task == "sym")
+dat_all_asym <- dat_all %>% filter(task == "asym")
+```
+
+### Checking whether participants perform the symmetric task 
+
+```{r fig.height=20, fig.width=7}
+fit_sym_preliminar <- quickpsy(dat_all_sym, 
+                      orientation, response, 
+                      grouping = .(subject, reference),
+                      bootstrap = "none")
+
+ggplot() +
+  facet_grid(subject ~ reference) +
+  geom_point(data = fit_sym_preliminar$averages,
+             aes(x = orientation, y = prob)) +
+  geom_line(data = fit_sym_preliminar$curves, aes(x = x, y = y)) +
+  theme_grey()
+```
+
+Participants 18, 19, 20 and 21 respond flat or reverse their responses.
+
+### Removing participants that respond flat or reverse their responses
+
+```{r}
+dat_sym <- dat_all_sym %>% filter(!subject %in% 18:21)
+```
+
+### Checking whether participants perform the symmetric task 
+
+```{r fig.height=20, fig.width=7}
+fun_normal <- function(x, p) {
+   pnorm(x, p[1] - p[2], p[3]) - pnorm(x, p[1] + p[2], p[3])
+}
+
+fit_asym_preliminar <- quickpsy(dat_all %>% filter(task == "asym"), 
+                      orientation, response, 
+                      fun = fun_normal,
+                      parini = list(pini_origin_asym, pini_origin_asym, pini_scale),
+                      grouping = .(subject, reference),
+                      bootstrap = "none")
+
+ggplot() +
+  facet_grid(subject ~ reference) +
+  geom_point(data = fit_asym_preliminar$averages,
+             aes(x = orientation, y = prob)) +
+  geom_line(data = fit_asym_preliminar$curves, aes(x = x, y = y)) +
+  theme_grey()
+```
+Participant 17 responds flat 
+
+### Removing participant that respond flat and the participants that could not perform the symmetric task 
+
+```{r}
+
+dat_sym %>% distinct(subject)
+dat_asym <- dat_all %>% filter(task == "asym") %>% 
+  filter(subject != 17) %>% 
+  filter(task == "asym") %>% 
+  semi_join(dat_sym %>% distinct(subject))
+
+```
+
+### Preparing the data exp 2
+```{r}
+dat_all2 <- read_csv('data/exp2.csv')  %>%
+  select(subject, session, orLarge, orSmall, task, rt, response) %>%
+  rename(reference = orLarge, orientation = orSmall) %>% 
+  mutate(
+    response = if_else(
+    (reference == 0 & response == "right") |
+    (reference == 90 & response == "down") |
+    (reference == 180 & response == "left") |
+    (reference == 270 & response == "up") |
+    (response == "m"), 1, 0),
+    vertical = if_else(reference == 0 | reference == 180, TRUE, FALSE),
+    reference = recode(reference, `0` = "Top", `90` = "Right", 
+                     `180` = "Bottom", `270` = "Left"),
+    references = if_else(reference == "Top" | reference == "Right", "TR", "BL"),
+    task = if_else(task == "comp", "sym", "asym"))
+
+
+block_cond <- dat_all2 %>% 
+  group_by(subject, session) %>% 
+  distinct(reference) %>% 
+  summarise(cond_per_block = n(), first = first(reference))
+  
+dat_all2 <- dat_all2 %>% left_join(block_cond)
+```
+
+### Checking whether participants perform the symmetric task in exp 2 
+
+```{r fig.height=20, fig.width=7}
+fit_sym_preliminar2 <- dat_all2 %>% 
+  group_by(subject, orientation, reference, cond_per_block) %>% 
+  mutate(prob = mean(response))
+
+
+ggplot() +
+  facet_grid(subject ~ cond_per_block) +
+  geom_line(data = fit_sym_preliminar2,
+             aes(x = orientation, y = prob, color = reference)) +
+  theme_grey()
+```
+
+### Removing participants that respond flat or reverse their responses in exp 2
+
+```{r}
+dat2 <- dat_all2 %>% filter(!subject %in% c(14))
+```
+### Saving data
+```{r}
+save(dat_sym, file = "logdata/dat_sym.RData")
+save(dat_asym, file = "logdata/dat_asym.RData")
+save(dat2, file = "logdata/dat2.RData")
+```
+

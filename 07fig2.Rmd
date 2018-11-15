@@ -1,0 +1,248 @@
+---
+title: "Figure 2"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+### Reading libraries and parameters. Preparing the data
+
+```{r, message=FALSE}
+library(tidyverse)
+library(quickpsy)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+load(file = "logdata/sym_averages_s_vs_d_best.RData")
+load(file = "logdata/sym_curves_s_vs_d_best.RData")
+load(file = "logdata/sym_par_s_vs_d_best.RData")
+load(file = "logdata/sym_par_s_vs_d_best_long.RData")
+load(file = "logdata/sym_par_s_vs_d_best_abs.RData")
+
+load(file = "logdata/asym_averages_s_vs_d_best.RData")
+load(file = "logdata/asym_curves_s_vs_d_best.RData")
+load(file = "logdata/asym_par_s_vs_d_best.RData")
+load(file = "logdata/asym_par_s_vs_d_best_long.RData")
+load(file = "logdata/asym_par_s_vs_d_best_abs.RData")
+```
+
+### Plotting examples of psychometric functions
+```{r}
+theme_set(theme_classic(8))
+
+plot_sym_psycho_best_asym <- function(subj, vert, title = "") {
+  if (title == text_zero) color <- col_no_bias 
+  if (title == text_sensory) color <- col_sensory
+  if (title == text_response) color <- col_response
+  if (title == text_full) color <- col_full
+  
+  if (title == text_zero | title == text_response) y_text <- text_prob_asym
+  else y_text <- ""
+  
+  p <- ggplot() +
+   facet_wrap(~ Participant, labeller = "label_both") +
+   geom_vline(xintercept = 0, size = size_line, lty = 2) +
+   geom_hline(yintercept = 0.5, size = size_line, lty = 2) +
+   geom_point(data = asym_averages_s_vs_d_best %>% 
+                filter(subject == subj, vertical == vert) %>% 
+                rename(Participant = subject), 
+              aes(x = orientation, y = prob, shape = reference), 
+              color = color) +
+   geom_line(data = asym_curves_s_vs_d_best %>% 
+               filter(subject == subj, vertical == vert) %>% 
+               rename(Participant = subject), 
+              aes(x = x, y = y, lty = reference), color = color) +
+  
+
+  ggtitle(label = title) +
+  scale_y_continuous(breaks = c(0, .5, 1)) +
+  scale_x_continuous(breaks = -2:2, labels = c("-2", "-1", "0", "1", "2")) +
+  coord_cartesian(xlim = c(-2.1, 2.1), ylim = c(0, 1.05))  +
+  labs(x = text_orientation, y = y_text,
+      color = text_reference,
+      shape = text_reference,
+      lty = text_reference) +
+   theme(legend.position = c(.19, .9),
+         legend.key.height = unit(0, "lines"),
+         legend.key.width = unit(0, "lines"),
+         strip.text.x = element_text(hjust = .6),
+         strip.background = element_blank(),
+         axis.line = element_line(size = size_line), 
+         axis.ticks = element_line(size = size_line),
+         strip.text = element_text(margin = margin(0,0,0,0, "lines")))
+ 
+ if (title == text_full) {
+   p <- p +
+     geom_segment(data = asym_par_s_vs_d_best_long %>%
+                  filter(subject == subj, vertical == vert) %>%
+                  rename(Participant = subject),
+                aes(x = 0, xend = psensory, y = 0.2, yend = 0.2),
+                arrow = arrow(length = unit(0.03, "inches"))) +
+    geom_segment(data = asym_par_s_vs_d_best_long %>%
+                  filter(subject == subj, vertical == vert) %>%
+                  rename(Participant = subject),
+                aes(x = psensory, xend = psensory, y = 0.2, yend = 0.5),
+                size = size_line) +
+   geom_segment(data = asym_par_s_vs_d_best_long %>%
+                  filter(subject == subj, vertical == vert) %>%
+                  rename(Participant = subject),
+                aes(x = psensory, xend = psensory - pdecisional, 
+                    y = 0.05, yend = 0.05),
+                arrow = arrow(length = unit(0.03, "inches"))) +
+  geom_segment(data = asym_par_s_vs_d_best_long %>%
+                  filter(subject == subj, vertical == vert) %>%
+                  rename(Participant = subject),
+                aes(x = psensory - pdecisional, xend = psensory - pdecisional, 
+                    y = 0.05, yend = 0.5),
+                size = size_line) +
+  geom_text(data = asym_par_s_vs_d_best_long %>%
+                  filter(subject == subj, vertical == vert) %>%
+                  rename(Participant = subject),
+            aes(x = .03, y = .2, label = "Sensory bias", hjust = 0), size = 2) +
+  geom_text(data = asym_par_s_vs_d_best_long %>%
+                  filter(subject == subj, vertical == vert) %>%
+                  rename(Participant = subject),
+            aes(x = psensory - pdecisional + .5, y = .05, label = "Decisional bias", hjust = 0), size = 2)
+ }
+if (vert) {
+      p <- p  + scale_shape_manual(breaks = c("Top", "Bottom"),
+                     values = c(15, 3)) +
+        scale_linetype_manual(breaks = c("Top", "Bottom"), values = c(1, 2)) 
+}
+  else {
+       p <- p  + scale_shape_manual(breaks = c("Right", "Left"),
+                     values = c(17, 16)) +
+        scale_linetype_manual(breaks = c("Right", "Left"), values = c(2, 1)) 
+  }
+ p
+}
+
+
+plot_psycho_ex_asym <- plot_grid(
+  plot_sym_psycho_best_asym(subj = 14, vert = FALSE, title = text_zero),
+  plot_sym_psycho_best_asym(subj = 3, vert = TRUE, title = text_sensory),
+  plot_sym_psycho_best_asym(subj = 1, vert = FALSE, title = text_response),
+  plot_sym_psycho_best_asym(subj = 16, vert = TRUE, title = text_full), 
+  nrow = 2, 
+  labels = c("C", "D", "E", "F"), 
+  hjust = 0, 
+  vjust = 1.1)
+plot_psycho_ex_asym
+```
+
+
+
+
+
+
+
+```{r}
+p_asym_bias <- ggplot() +
+  geom_vline(xintercept = 0, size = size_line, lty = 2) +
+  geom_hline(yintercept = 0, size = size_line, lty = 2) +
+  geom_point(data = asym_par_s_vs_d_best_long, 
+             aes(x = psensory, y = pdecisional, color = best), alpha = 0.5) +
+  scale_color_manual(values = c(col_full, col_response, 
+                                col_sensory, col_no_bias),
+                     breaks = c("zero", "sensory", "response", "no sym crit"),
+                     labels = c(text_zero, text_sensory, 
+                                "Symmetric\ndecisional\nbias", 
+                                "Sensory +\ndecisional")) +
+  coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
+  #xlim(-1.07, 1.07) +
+  #ylim(-1.07, 1.07) +
+  labs(x = text_sensory_bias, y = text_decisional_bias, 
+       color = text_best_model) +
+  theme(axis.line = element_line(size = size_line),
+        axis.ticks = element_line(size = size_line),
+        legend.key.height = unit(1.5, "lines"),
+        axis.title.y = element_text(hjust = 0.4), 
+          plot.margin = unit(c(0, 0, 0, 0), "cm"))
+p_asym_bias
+```
+
+
+```{r}
+
+
+asym_par_s_vs_d_best_abs_ci <- asym_par_s_vs_d_best_abs %>% 
+  ungroup() %>% 
+  select(parn, abs_par) %>% 
+  group_by(parn) %>% 
+  nest() %>% 
+  mutate(ttest= map(data, 
+                    ~t.test(.$abs_par, 
+                                 conf.int = TRUE) %>% 
+                      tidy())) %>% 
+  select(-data) %>% 
+  unnest(ttest)
+
+asym_par_s_vs_d_best_abs %>% 
+  t.test(abs_par ~ parn, data = ., paired = TRUE) 
+
+p_asym_bias_abs <- ggplot(data = asym_par_s_vs_d_best_abs, 
+             aes(x = reorder(parn, desc(parn)), y = abs_par))+
+  geom_point(position = position_jitter(width = .15), 
+             shape = 1, alpha = .5, size = .8) +
+    geom_crossbar(data = asym_par_s_vs_d_best_abs_ci, 
+                size = .15,
+                aes(x = parn, y = estimate, 
+                    ymin= conf.low , ymax = conf.high)) +
+  geom_signif(comparisons = list(c("Sensory\nbias", "Decisional\nbias")),
+              margin_top = .1,
+              size = size_line,
+              textsize = 4,
+              annotations = "***") +
+  labs(y = "Abs. value bias (deg)", x = "", title = "") +
+ 
+  scale_x_discrete(breaks =c("Decisional\nbias","Sensory\nbias")) +
+  scale_y_continuous(breaks = seq(0, 1, .5)) +
+  coord_cartesian(ylim = c(0, 1.3)) +
+  theme(axis.line = element_line(size = size_line), 
+        axis.ticks = element_line(size = size_line),
+        axis.title.x = element_blank())
+      
+p_asym_bias_abs
+
+```
+
+
+
+
+### Illustration of the task 
+```{r}
+p_illustration_asym <- ggdraw() + draw_image(x = .39, 
+                                            y = -0.01, 
+                                            scale = 1.7,
+                                            "figures/illustrationasym.pdf")
+```
+
+```{r fig.height=10, fig.width=6}
+p_fig_2_bias_abs_bias <- plot_grid(p_asym_bias,
+                         p_asym_bias_abs, 
+                         rel_widths = c(.65, .35), 
+                         labels = c("G", "H"),
+                         hjust = 0, 
+                         vjust = 1.1)
+
+p_fig_2_left <- plot_grid(plot_psycho_ex_asym,
+                         p_fig_2_bias_abs_bias, 
+                         ncol = 1, 
+                         rel_heights = c(.72, .28))
+
+p_fig_2 <- plot_grid(p_illustration_asym,
+                      p_fig_2_left, 
+                     rel_widths = c(.4, .6),
+                      labels = "A\n\n\n\n\n\n\n\n\n\nB",
+                        hjust = 0, 
+                         vjust = 1.01)
+                       
+save_plot('figures/figure2.pdf', p_fig_2, 
+          base_width = two_column_width,
+          base_height =  .87 * two_column_width)
+  
+```

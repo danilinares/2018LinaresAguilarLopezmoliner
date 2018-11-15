@@ -1,0 +1,261 @@
+---
+title: "Figure 1"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+### Reading libraries and parameters. Preparing the data
+
+```{r, message=FALSE}
+library(tidyverse)
+library(broom)
+library(ggsignif)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+load(file = "logdata/sym_averages_s_vs_d_best.RData")
+load(file = "logdata/sym_curves_s_vs_d_best.RData")
+load(file = "logdata/sym_par_s_vs_d_best.RData")
+load(file = "logdata/sym_par_s_vs_d_best_long.RData")
+load(file = "logdata/sym_par_s_vs_d_best_abs.RData")
+```
+
+### Plotting examples of psychometric functions
+```{r}
+theme_set(theme_classic(8))
+
+plot_sym_psycho_best <- function(subj, vert, title = "") {
+  if (title == text_zero) color <- col_no_bias 
+  if (title == text_sensory) color <- col_sensory
+  if (title == text_decision) color <- col_decision
+  if (title == text_full) color <- col_full
+  
+  if (title == text_zero | title == text_decision) y_text <- text_prob_sym
+  else y_text <- ""
+
+
+  p <- ggplot() +
+   facet_wrap(~ Participant, labeller = "label_both") +
+   geom_vline(xintercept = 0, size = size_line, lty = 2) +
+   geom_hline(yintercept = 0.5, size = size_line, lty = 2) +
+   geom_point(data = sym_averages_s_vs_d_best %>% 
+                filter(subject == subj, vertical == vert) %>% 
+                rename(Participant = subject), 
+              aes(x = orientation, y = prob, shape = reference), 
+              color = color) +
+   geom_line(data = sym_curves_s_vs_d_best %>% 
+               filter(subject == subj, vertical == vert) %>% 
+               rename(Participant = subject), 
+             aes(x = x, y = y, lty = reference), 
+             color = color) +
+  ggtitle(label = title) +
+  scale_y_continuous(breaks = c(0, .5, 1)) +
+  scale_x_continuous(breaks = -2:2, labels = c("-2", "-1", "0", "1", "2")) +
+  coord_cartesian(xlim = c(-2.1, 2.1), ylim = c(0, 1.05))  +
+  labs(x = text_orientation, y = y_text,
+      color = text_reference,
+      shape = text_reference,
+      lty = text_reference) +
+   theme(legend.position = c(.2, .8),
+         legend.key.height = unit(0, "lines"),
+         strip.background = element_blank(),
+         axis.line = element_line(size = size_line), 
+         axis.ticks = element_line(size = size_line),
+         strip.text = element_text(margin = margin(0,0,0,0, "lines")))
+ 
+ if (title == text_full) {
+   p <- p +
+     geom_segment(data = sym_par_s_vs_d_best_long %>% 
+                    filter(subject == subj, vertical == vert) %>%
+                    rename(Participant = subject), 
+                  aes(x = 0, xend = p1, y = 0.2, yend = 0.2),
+                  arrow = arrow(length = unit(0.03, "inches"))) +
+     geom_segment(data = sym_par_s_vs_d_best_long %>% 
+                    filter(subject == subj, vertical == vert) %>% 
+                    rename(Participant = subject), 
+                  aes(x = p1, xend = p1, y = 0.2, yend = 0.5),
+                  size = size_line) +
+     geom_segment(data = sym_par_s_vs_d_best_long %>% 
+                    filter(subject == subj, vertical == vert) %>% 
+                    rename(Participant = subject),  
+                  aes(x = p1, xend = p1 - p2, y = 0.05, yend = 0.05),
+                  arrow = arrow(length = unit(0.03, "inches"))) +
+     geom_segment(data = sym_par_s_vs_d_best_long %>% 
+                    filter(subject == subj, vertical == vert) %>% 
+                    rename(Participant = subject), 
+                  aes(x = p1 - p2, xend = p1 - p2, y = 0.05, yend = 0.5),
+                  size = size_line) +
+     geom_text(data = sym_par_s_vs_d_best_long %>% 
+                  filter(subject == subj, vertical == vert) %>% 
+                  rename(Participant = subject), 
+                aes(x = .2, y = .2, label = "Sensory bias", hjust = 0), 
+               size = 2) +
+     geom_text(data = sym_par_s_vs_d_best_long %>% 
+                 filter(subject == subj, vertical == vert) %>% 
+                rename(Participant = subject), 
+            aes(x = p1 - p2 + .2, y = .05, 
+                label = "Decisional bias", hjust = 0), size = 2) 
+ }
+if (vert) {
+      p <- p  + scale_shape_manual(breaks = c("Top", "Bottom"),
+                     values = c(15, 3)) +
+        scale_linetype_manual(breaks = c("Top", "Bottom"), values = c(1, 2)) 
+}
+  else {
+       p <- p  + scale_shape_manual(breaks = c("Right", "Left"),
+                     values = c(17, 16)) +
+        scale_linetype_manual(breaks = c("Right", "Left"), values = c(2, 1)) 
+  }
+ p
+}
+
+plot_psycho_ex <- plot_grid(
+  plot_sym_psycho_best(subj = 12, vert = FALSE, title = text_zero),
+  plot_sym_psycho_best(subj = 2, vert = FALSE, title = text_sensory),
+  plot_sym_psycho_best(subj = 9, vert = FALSE, title = text_decision),
+  plot_sym_psycho_best(subj = 4, vert = FALSE, title = text_full), 
+  nrow = 2, 
+  labels = c("C", "D", "E", "F"), 
+  hjust = 0, 
+  vjust = 1.1)
+plot_psycho_ex
+```
+
+
+```{r fig.height=4, fig.width=6}
+p_sym_bias <- ggplot() +
+  geom_vline(xintercept = 0, size = size_line, lty = 2) +
+  geom_hline(yintercept = 0, size = size_line, lty = 2) +
+  geom_point(data = sym_par_s_vs_d_best_long, 
+             aes(x = p1, y = p2, color = best), alpha = .7) +
+  scale_color_manual(values = c("#377eb8", "#e41a1c", "#4daf4a","grey"), 
+                     breaks = c("zero", "sensory", "decision", "full"),
+                     labels = text_labels_model)  +
+  coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
+  # xlim(-1.07, 1.07) +
+  # ylim(-1.07, 1.07) +
+  labs(x = text_sensory_bias, y = text_decisional_bias, 
+       color = text_best_model) +
+  theme(axis.line = element_line(size = size_line),
+        axis.ticks = element_line(size = size_line),
+        axis.title.y = element_text(hjust = 0.4), 
+          plot.margin = unit(c(0, 0, 0, 0), "cm"))
+p_sym_bias
+```
+  
+```{r}
+
+# sym_par_s_vs_d_best_abs_boot <- sym_par_s_vs_d_best_abs %>% 
+#   group_by(parn) %>% 
+#   nest() %>% 
+#   mutate(b = map(data, ~boot(.$abs_par,  
+#                              statistic = 
+#                                function(data, i){
+#                                  d <- data[i]
+#                                  mean(d)  
+#                                  }, 
+#                              R=10000)),
+#          y = map_dbl(b, "t0"),
+#          samples = map(b, "t"),
+#          ci = map(b, ~boot.ci(., type = "perc")),
+#          ymin = map_dbl(ci, ~.$percent[1, 4]),
+#          ymax = map_dbl(ci, ~.$percent[1, 5]))
+# 
+# sym_par_s_vs_d_best_abs_boot_samples <- sym_par_s_vs_d_best_abs_boot %>% 
+#   select(parn, samples) %>% 
+#   unnest(samples) %>% 
+#   group_by(parn) %>% 
+#   mutate(row = row_number()) %>% 
+#   group_by(row) %>% 
+#   spread(parn, samples) %>% 
+#   rename(decision = `Decisional\nbias`, sensory = `Sensory\nbias`) %>% 
+#   mutate(dif = sensory - decision) %>% 
+#   ungroup() %>% 
+#   summarise(ymin = quantile(dif, .025),
+#             ymax = quantile(dif, .975))
+# 
+# 
+
+
+
+
+sym_par_s_vs_d_best_abs_ci <- sym_par_s_vs_d_best_abs %>% 
+  ungroup() %>% 
+  select(parn, abs_par) %>% 
+  group_by(parn) %>% 
+  nest() %>% 
+  mutate(ttest= map(data, 
+                    ~t.test(.$abs_par, 
+                                 conf.int = TRUE) %>% 
+                      tidy())) %>% 
+  select(-data) %>% 
+  unnest(ttest)
+
+sym_par_s_vs_d_best_abs %>% 
+  t.test(abs_par ~ parn, data = ., paired = TRUE) 
+
+
+p_sym_bias_abs <- ggplot(data = sym_par_s_vs_d_best_abs, 
+             aes(x = reorder(parn, desc(parn)), y = abs_par))+
+  geom_point(position = position_jitter(width = .15), 
+             shape = 1, alpha = .5, size = .8) +
+  geom_crossbar(data = sym_par_s_vs_d_best_abs_ci, 
+                size = .15,
+                aes(x = parn, y = estimate, 
+                    ymin= conf.low , ymax = conf.high)) +
+  geom_signif(comparisons = list(c("Sensory\nbias", "Decisional\nbias")),
+              margin_top = .1,
+              size = size_line,
+              textsize = 4,
+              annotations = "***") +
+  
+  labs(y = "Abs. value bias (deg)", x = "", title = "") +
+  scale_x_discrete(breaks =c("Decisional\nbias","Sensory\nbias")) +
+  scale_y_continuous(breaks = seq(0, 1, .5)) +
+  coord_cartesian(ylim = c(0, 1.3)) +
+  theme(axis.line = element_line(size = size_line), 
+        axis.ticks = element_line(size = size_line),
+        axis.title.x = element_blank())
+      
+p_sym_bias_abs
+
+```
+
+
+### Illustration of the task 
+```{r}
+p_illustration_sym <- ggdraw() + draw_image(x = .39, 
+                                            y = -0.01, 
+                                            scale = 1.7,
+                                            "figures/illustrationsym.pdf")
+```
+
+```{r fig.height=10, fig.width=6}
+p_fig_1_bias_abs_bias <- plot_grid(p_sym_bias,
+                         p_sym_bias_abs, 
+                         rel_widths = c(.65, .35), 
+                         labels = c("G", "H"),
+                         hjust = 0, 
+                         vjust = 1.1)
+
+p_fig_1_left <- plot_grid(plot_psycho_ex,
+                         p_fig_1_bias_abs_bias, 
+                         ncol = 1, 
+                         rel_heights = c(.72, .28))
+
+p_fig_1 <- plot_grid(p_illustration_sym,
+                     p_fig_1_left, 
+                     rel_widths = c(.4, .6),
+                     labels = "A\n\n\n\n\n\n\n\n\n\nB",
+                     hjust = 0, 
+                     vjust = 1.01)
+                       
+save_plot('figures/figure1.pdf', p_fig_1, 
+          base_width = two_column_width,
+          base_height =  .87 * two_column_width)
+```
+

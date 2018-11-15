@@ -1,0 +1,77 @@
+---
+title: "Figure Sup 1"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+### Reading libraries and parameters
+
+```{r, message=FALSE}
+library(tidyverse)
+library(quickpsy)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+load(file = "logdata/asym_averages_s_vs_d_best.RData")
+load(file = "logdata/asym_curves_s_vs_d_best.RData")
+load(file = "logdata/asym_par_s_vs_d_best.RData")
+```
+
+
+### Plotting examples of psychometric functions
+```{r fig.height=15, fig.width=15}
+theme_set(theme_classic(8))
+
+p_fig_sup2 <- ggplot() +
+   facet_wrap(Participant ~ vertical, 
+              labeller = labeller(
+                vertical = c(`TRUE` = "Vertical", `FALSE` = "Horizontal"))) +
+   geom_vline(xintercept = 0, size = size_line, lty = 2) +
+   geom_hline(yintercept = 0.5, size = size_line, lty = 2) +
+   geom_point(data = asym_averages_s_vs_d_best %>% 
+                rename(Participant = subject), 
+              aes(x = orientation, y = prob, color = best, shape = reference)) +
+   geom_line(data = asym_curves_s_vs_d_best %>% 
+               rename(Participant = subject), 
+             aes(x = x, y = y, color = best, lty = reference)) +
+  scale_color_manual(values = c("#e41a1c", "#fb9a99", "#4daf4a","grey"),
+                     breaks = c("zero", "sensory", "response", "no sym crit"),
+                     labels = c("No bias", "Sensory bias", 
+                                "Symmetric decisional bias", 
+                                "Sensory + decisional"))  +
+  # scale_linetype_manual(values = c(1, 2, 1, 2)) +
+  scale_shape_manual(breaks = c("Right", "Left", "Top", "Bottom"),
+                     values = c(15, 17, 16, 3)) +
+  scale_linetype_manual(breaks = c("Right", "Left", "Top", "Bottom"),
+                     values = c(1, 2, 1, 2)) +
+   scale_y_continuous(breaks = c(0, .5, 1)) +
+   scale_x_continuous(breaks = -2:2, labels = c("-2", "-1", "0", "1", "2")) +
+  coord_cartesian(xlim = c(-2.1, 2.1), ylim = c(0, 1.05))  +
+   labs(x = text_orientation, y = text_prob_asym,
+      color = text_best_model,
+      shape = text_reference,
+      lty = text_reference) +
+  guides(
+    color = guide_legend(order = 1),
+    lty = guide_legend(order = 2),
+    shape = guide_legend(order = 2)
+  ) +
+   theme(legend.position = c(.53, .06),
+         legend.box = "horizontal",
+         legend.key.height = unit(0.8, "lines"),
+         strip.background = element_blank(),
+         axis.title.x = element_text(hjust = 0.1),
+         axis.line = element_line(size = size_line), 
+         axis.ticks = element_line(size = size_line),
+         strip.text = element_text(margin = margin(0,0,0,0, "lines")))
+
+
+
+save_plot('figures/figuresupplementary2.pdf', p_fig_sup2, 
+          base_width = two_column_width,
+          base_height = two_column_width)
+```
