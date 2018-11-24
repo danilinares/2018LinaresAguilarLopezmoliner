@@ -802,8 +802,8 @@ ggplot() + facet_wrap(subject ~ vertical, ncol = 4) +
   #            aes(xintercept = pfirst, lty = "pfirst")) +
   # geom_vline(data = asym_par_s_vs_d_long,
   #            aes(xintercept = psecond, lty = "psecond")) +
-    geom_vline(data = asym_par_s_vs_d_long,
-             aes(xintercept = psensory, lty = "psensory")) +
+    # geom_vline(data = asym_par_s_vs_d_long,
+    #          aes(xintercept = psensory, lty = "psensory")) +
     geom_vline(data = asym_par_s_vs_d_long,
              aes(xintercept = psensory + pdecisional, lty = "psensory  + pdecisional")) +
   theme_grey() + theme(legend.position = "top") 

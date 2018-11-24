@@ -16,11 +16,20 @@ list.files("R", full.names = TRUE) %>% walk(source)
 source("graphical_parameters.R")
 source("parameters.R")
 
-
+sym_thre_s_vs_d
+load(file = "logdata/sym_thre_s_vs_d.RData")
 load(file = "logdata/sym_par_s_vs_d_best.RData")
 load(file = "logdata/asym_par_s_vs_d_best.RData")
 load(file = "logdata/sym_par_s_vs_d_best_abs.RData")
 load(file = "logdata/asym_par_s_vs_d_best_abs.RData")
+
+theme_set(theme_classic(8))
+```
+
+Testing whether the number of signicant decisional biases was different for the symmetric and the asymmetric task 
+```{r}
+prop.test(c(8, 5), c(16, 16), correct = T)
+
 ```
 
 ```{r}
@@ -73,35 +82,57 @@ cor.test(sensory_bias$sym, sensory_bias$asym)
 p_corr <- ggplot(data = sensory_bias %>% 
                    mutate(best_asym = if_else(best_asym == "no sym crit",
                                               "full", best_asym)), 
-                 aes(x = asym, y = sym) ) +
+                 aes(x = sym, y = asym) ) +
   geom_abline(slope = 1, intercept = 0, lty = 2, size = size_line) +
   geom_vline(xintercept = 0, lty = 2, size = size_line) +
   geom_hline(yintercept = 0, lty = 2, size = size_line) +
-  geom_point(aes(x = asym + 0.03, y = sym - 0.03, color = best_sym,
-                 shape = "Asymmetric"), 
+  geom_point(aes(x = sym - 0.03, y = asym + 0.03, color = best_sym,
+                 shape = "Asymmetric"),
              size = 2, alpha = .75) +
-  geom_point(aes(x = asym - 0.03, y = sym + 0.03, color = best_asym,
-                 shape = "Symmetric"), 
+  geom_point(aes(x = sym + 0.03, y = asym - 0.03 , color = best_asym,
+                 shape = "Symmetric"),
               size = 2, alpha = .75) +
-  geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.75) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.75) +#+
   scale_shape_manual(values = c(15, 16)) +
-  scale_color_manual(values = c(col_decision, col_full, 
+  scale_color_manual(values = c(col_decision, col_full,
                                col_response, col_sensory, col_no_bias),
-                   breaks = c("zero", "sensory", 
+                   breaks = c("zero", "sensory",
                               "decision", "response","full"),
-                   labels = c(text_zero, text_sensory, 
+                   labels = c(text_zero, text_sensory,
                               text_decision, text_response, text_full)) +
-  coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
-  labs(x = expression(paste("Sensory bias ", bold("asymmetric"), " task (deg)")),
-       y = expression(paste("Sensory bias ", bold("symmetric"), " task (deg)")),
-       shape = "Task", 
+   coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
+  labs(y = expression(paste("Sensory bias ", bold("asymmetric"), " task (deg)")),
+       x = expression(paste("Sensory bias ", bold("symmetric"), " task (deg)")),
+       shape = "Task",
        color = text_best_model) +
-  theme(axis.line = element_line(size = size_line), 
-        axis.ticks = element_line(size = size_line), 
+  theme(axis.line = element_line(size = size_line),
+        axis.ticks = element_line(size = size_line),
         legend.key.height = unit(.85, "lines")) +
   guides(shape = guide_legend(reverse = TRUE))
 
 p_corr
+```
+
+### Correlation just using one reference
+
+```{r}
+sym_asym_single_ref <- sym_thre_s_vs_d %>% 
+  filter(references == "BL") %>% 
+  select(subject, vertical, thre) %>% 
+  left_join(
+  asym_par_s_vs_d_long %>% 
+  mutate(max_BL = psensory + pdecisional) %>% 
+  select(subject, vertical, max_BL) 
+  ) %>%   
+  filter(!is.na(max_BL))
+
+cor.test(sym_asym_single_ref$max_BL, sym_asym_single_ref$thre)
+
+
+ggplot(sym_asym_single_ref, aes(thre, max_BL)) +
+  geom_point()+
+  coord_equal()
+
 ```
 
 
@@ -173,8 +204,10 @@ p_fig_3 <- plot_grid(
   rel_widths = c(.6, .4)
 )
 
-save_plot('figures/figure3.pdf', p_fig_3, 
+save_plot("figures/figure3.pdf", p_fig_3, 
           base_width = two_column_width,
           base_height =  0.34 * two_column_width)
+
+
 ```
 

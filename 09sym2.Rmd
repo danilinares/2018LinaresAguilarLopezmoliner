@@ -416,7 +416,6 @@ sym_averages_s_vs_d_test2 <-
 sym_curves_s_vs_d_test2 <- 
   (fit_sym_no_two_guess_same_slope2$curves %>% semi_join(best_sym_no_two_guess_same_slope2))
 
-
 ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 6) +
   geom_point(data = sym_averages_s_vs_d_test2, 
              aes(x = orientation, y = prob, color = references)) +
@@ -1389,9 +1388,6 @@ best2 <- best_sym_no_two_guess_same_slope_zero2 %>%
   bind_rows(best_absent_lapses_same_slope_zero2) %>% 
   bind_rows(best_absent_lapses_same_slope_no_zero_no_s2) %>% 
   bind_rows(best_absent_lapses_same_slope_no_zero_s2) 
-
-
-
 
 
 sym_averages_s_vs_d_best2 <-  sym_averages_s_vs_d2 %>%

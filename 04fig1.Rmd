@@ -22,11 +22,13 @@ load(file = "logdata/sym_curves_s_vs_d_best.RData")
 load(file = "logdata/sym_par_s_vs_d_best.RData")
 load(file = "logdata/sym_par_s_vs_d_best_long.RData")
 load(file = "logdata/sym_par_s_vs_d_best_abs.RData")
+
+theme_set(theme_classic(8))
 ```
 
 ### Plotting examples of psychometric functions
 ```{r}
-theme_set(theme_classic(8))
+
 
 plot_sym_psycho_best <- function(subj, vert, title = "") {
   if (title == text_zero) color <- col_no_bias 
@@ -199,7 +201,7 @@ sym_par_s_vs_d_best_abs %>%
   t.test(abs_par ~ parn, data = ., paired = TRUE) 
 
 
-p_sym_bias_abs <- ggplot(data = sym_par_s_vs_d_best_abs, 
+  p_sym_bias_abs <- ggplot(data = sym_par_s_vs_d_best_abs, 
              aes(x = reorder(parn, desc(parn)), y = abs_par))+
   geom_point(position = position_jitter(width = .15), 
              shape = 1, alpha = .5, size = .8) +

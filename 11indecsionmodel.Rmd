@@ -1,0 +1,857 @@
+---
+title: "Indecision model "
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+### Reading libraries and parameters. Preparing the data
+
+```{r message=FALSE}
+library(tidyverse)
+library(cowplot)
+
+list.files("R", full.names = TRUE) %>% walk(source)
+source("graphical_parameters.R")
+source("parameters.R")
+
+
+load(file = "logdata/sym_averages_s_vs_d_best.RData")
+load(file = "logdata/sym_curves_s_vs_d_best.RData")
+load(file = "logdata/best.RData")
+load(file = "logdata/best_sym_absent_lapses_same_slope.RData")
+load(file = "logdata/best_sym_no_absent_lapses_same_slope.RData")
+load(file = "logdata/best_sym_no_absent_lapses_no_same_slope.RData")
+load(file = "logdata/best_sym_no_same_guess.RData")
+
+load(file = "logdata/sym_averages_s_vs_d_best2.RData")
+load(file = "logdata/sym_curves_s_vs_d_best2.RData")
+load(file = "logdata/best2.RData")
+
+
+
+```
+
+### Experiment 1
+
+
+#### Absent lapses same slope 
+
+```{r}
+fun_sym_absent_lapses_same_slope_gp <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_absent_lapses_same_slope_gp <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)) %>% 
+                                                  semi_join(best_sym_absent_lapses_same_slope), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_absent_lapses_same_slope_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), c(0, 1)),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_absent_lapses_same_slope_gp$aic,
+                    fit_sym_absent_lapses_same_slope$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_absent_lapses_same_slope))
+
+### symetric crit 
+fun_sym_absent_lapses_same_slope_gp2 <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x,  p[2] + p[1], p[3]))),
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x,  p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_absent_lapses_same_slope_gp2 <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)) %>% 
+                                                  semi_join(best_sym_absent_lapses_same_slope), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_absent_lapses_same_slope_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(0, 1)),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_absent_lapses_same_slope_gp2$aic,
+                    fit_sym_absent_lapses_same_slope$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_absent_lapses_same_slope))
+```
+
+
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+    geom_line(data = fit_sym_absent_lapses_same_slope_gp$curves, 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+      geom_line(data = fit_sym_absent_lapses_same_slope_gp2$curves, 
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+#### Same guess same slope 
+
+```{r}
+fun_sym_same_guess_same_slope_gp <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) p[6] + (1 - 2 * p[6]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) p[6] + (1 - 2 * p[6]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_same_guess_same_slope_gp <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_same_guess_same_slope_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), c(0, 1), pini_lapse),
+                bootstrap = "none")
+
+
+
+model_selection_aic(fit_sym_same_guess_same_slope_gp$aic %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope),
+                    fit_sym_same_guess_same_slope$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope))
+
+### symetric crit 
+fun_sym_same_guess_same_slope_gp2 <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) p[5] + (1 - 2 * p[5]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) p[5] + (1 - 2 * p[5]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_same_guess_same_slope_gp2 <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_same_guess_same_slope_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(0, 1), pini_lapse),
+                bootstrap = "none")
+
+
+model_selection_aic(fit_sym_same_guess_same_slope_gp2$aic %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope),
+                    fit_sym_same_guess_same_slope$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope))
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_same_guess_same_slope_gp$curves %>% 
+                semi_join(best_sym_no_absent_lapses_same_slope), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_same_guess_same_slope_gp2$curves %>% 
+              semi_join(best_sym_no_absent_lapses_same_slope),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+#### Sym same guess
+
+```{r}
+
+
+
+fun_sym_same_guess_gp <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) p[6] + (1 - 2 * p[6]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) p[6] + (1 - 2 * p[6]) *
+    (pnorm(x,  -p[1] + p[2], p[7]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[7]) - pnorm(-x, - p[4] + p[1], p[7])))
+
+    )))
+
+fit_sym_same_guess_gp <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_same_guess_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), 
+                              c(0, 1), pini_lapse, pini_scale),
+                bootstrap = "none")
+
+
+model_selection_aic(fit_sym_same_guess_gp$aic %>% 
+                      semi_join(best_sym_no_absent_lapses_no_same_slope),
+                    fit_sym_same_guess$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_no_absent_lapses_no_same_slope))
+
+### symetric crit 
+
+fun_sym_same_guess_gp2 <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) p[5] + (1 - 2 * p[5]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) p[5] + (1 - 2 * p[5]) *
+    (pnorm(x,  -p[1] + p[2], p[7]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[6]) - pnorm(-x, + p[2] + p[1], p[6])))
+
+    )))
+
+fit_sym_same_guess_gp2 <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_same_guess_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), 
+                              c(0, 1), pini_lapse, pini_scale),
+                bootstrap = "none")
+
+
+model_selection_aic(fit_sym_same_guess_gp2$aic %>% 
+                      semi_join(best_sym_no_absent_lapses_no_same_slope),
+                    fit_sym_same_guess$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_no_absent_lapses_no_same_slope))
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_same_guess_gp$curves %>% 
+                semi_join(best_sym_no_absent_lapses_no_same_slope), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_same_guess_gp2$curves %>%
+              semi_join(best_sym_no_absent_lapses_no_same_slope),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+#### Same guess same slope
+
+```{r}
+
+fun_sym_guess_same_slope_gp <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) p[6] + (1 - 2 * p[6]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) p[7] + (1 - 2 * p[7]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_guess_same_slope_gp <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_guess_same_slope_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), 
+                              c(0, 1), pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+
+model_selection_aic(fit_sym_guess_same_slope_gp$aic %>% 
+                      semi_join(best_sym_no_same_guess),
+                    fit_sym_guess_same_slope$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_no_same_guess))
+
+### symetric crit 
+
+fun_sym_guess_same_slope_gp2 <-  dat_sym  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) p[5] + (1 - 2 * p[5]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) p[6] + (1 - 2 * p[6]) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_guess_same_slope_gp2 <- quickpsy(dat_sym %>% 
+                                                  semi_join(
+                                                    best %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, vertical)), 
+                               orientation, response, 
+                grouping = .(subject, vertical, references),
+                fun = fun_sym_guess_same_slope_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, 
+                              c(0, 1), pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+
+model_selection_aic(fit_sym_guess_same_slope_gp2$aic %>% 
+                      semi_join(best_sym_no_same_guess),
+                    fit_sym_guess_same_slope$aic %>% 
+                      semi_join(best %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, vertical)) %>% 
+                      semi_join(best_sym_no_same_guess))
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ vertical, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_guess_same_slope_gp$curves %>% 
+                semi_join(best_sym_no_same_guess), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_guess_same_slope_gp2$curves %>%
+              semi_join(best_sym_no_same_guess),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+### Experiment 2
+
+
+#### Absent lapses same slope 
+
+```{r}
+fun_sym_absent_lapses_same_slope2_gp <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_absent_lapses_same_slope2_gp <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), c(0, 1)),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_absent_lapses_same_slope2_gp$aic %>% 
+                      semi_join(best_sym_absent_lapses_same_slope2),
+                    fit_sym_absent_lapses_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_absent_lapses_same_slope2))
+
+### symetric crit 
+fun_sym_absent_lapses_same_slope2_gp2 <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_absent_lapses_same_slope2_gp2 <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(0, 1)),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_absent_lapses_same_slope2_gp2$aic %>% 
+                      semi_join(best_sym_absent_lapses_same_slope2),
+                    fit_sym_absent_lapses_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_absent_lapses_same_slope2))
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best2 %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best2 %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_absent_lapses_same_slope2_gp$curves %>% 
+                semi_join(best_sym_absent_lapses_same_slope2), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_absent_lapses_same_slope2_gp2$curves %>%
+              semi_join(best_sym_absent_lapses_same_slope2),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+#### Sym absent lapses
+
+```{r}
+
+
+fun_sym_absent_lapses2_gp <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[6]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[6]) - pnorm(-x, - p[4] + p[1], p[6])))
+
+    )))
+
+fit_sym_absent_lapses2_gp <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), c(0, 1),
+                              pini_scale),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_absent_lapses2_gp$aic %>% 
+                      semi_join(best_sym_absent_lapses_no_same_slope2),
+                    fit_sym_absent_lapses2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_absent_lapses_no_same_slope2))
+
+### symetric crit 
+
+fun_sym_absent_lapses2_gp2 <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) 0.01 + (1 - 2 * 0.01) *
+    (pnorm(x,  -p[1] + p[2], p[5]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[6]) - pnorm(-x, + p[2] + p[1], p[5])))
+
+    )))
+
+fit_sym_absent_lapses2_gp2 <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_absent_lapses_same_slope_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale,  c(0, 1),
+                              pini_scale),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_absent_lapses2_gp2$aic %>% 
+                      semi_join(best_sym_absent_lapses_no_same_slope2),
+                    fit_sym_absent_lapses2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_absent_lapses_no_same_slope2))
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best2 %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best2 %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_absent_lapses2_gp$curves %>% 
+                semi_join(best_sym_absent_lapses_no_same_slope2), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_absent_lapses2_gp2$curves %>%
+              semi_join(best_sym_absent_lapses_no_same_slope2),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+
+#### Sym same guess same slope 
+
+```{r}
+
+fun_sym_same_guess_same_slope2_gp <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[6] + (1 - 2 * p[6])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) p[6] + (1 - 2 * p[6])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_same_guess_same_slope2_gp <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_same_slope2_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), c(0, 1), pini_lapse),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_same_guess_same_slope2_gp$aic %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope2),
+                    fit_sym_same_guess_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope2))
+
+### symetric crit 
+
+fun_sym_same_guess_same_slope2_gp2 <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + (1 - 2 * p[5])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) p[5] + (1 - 2 * p[5])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_same_guess_same_slope2_gp2 <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_same_guess_same_slope2_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(0, 1), pini_lapse),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_same_guess_same_slope2_gp2$aic %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope2),
+                    fit_sym_same_guess_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_no_absent_lapses_same_slope2))
+
+
+```
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best2 %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best2 %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_same_guess_same_slope2_gp$curves %>% 
+                semi_join(best_sym_no_absent_lapses_same_slope2), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_same_guess_same_slope2_gp2$curves %>%
+              semi_join(best_sym_absent_lapses_no_same_slope2),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+#### sym guess same slope  
+
+```{r}
+fun_sym_guess_same_slope2_gp <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[6] + (1 - 2 * p[6])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) p[7] + (1 - 2 * p[7])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_guess_same_slope2_gp <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess_same_slope2_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), 
+                              c(0, 1), pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_guess_same_slope2_gp$aic %>% 
+                      semi_join(best_sym_no_same_guess2),
+                    fit_sym_guess_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_no_same_guess2))
+
+### symetric crit 
+fun_sym_guess_same_slope2_gp2 <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + (1 - 2 * p[5])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) p[6] + (1 - 2 * p[6])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_guess_same_slope2_gp2 <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_guess_same_slope2_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale,  
+                              c(0, 1), pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_guess_same_slope2_gp2$aic %>% 
+                      semi_join(best_sym_no_same_guess2),
+                    fit_sym_guess_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_no_same_guess2))
+
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best2 %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best2 %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_guess_same_slope2_gp$curves %>% 
+                semi_join(best_sym_no_same_guess2), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_guess_same_slope2_gp2$curves %>%
+              semi_join(best_sym_no_same_guess2),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+
+#### sym no two guess same slope 
+
+```{r}
+
+fun_sym_no_two_guess_same_slope2_gp <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[6] + (1 - 2 * p[7])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[5] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3]))),
+    function(x, p) p[8] + (1 - 2 * p[9])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[5]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, - p[4] + p[1], p[3])))
+
+    )))
+
+fit_sym_no_two_guess_same_slope2_gp <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess_same_slope2_gp,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), 
+                              c(0, 1), pini_lapse, pini_lapse, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_no_two_guess_same_slope2_gp$aic %>% 
+                      semi_join(best_sym_no_two_guess_same_slope2),
+                    fit_sym_no_two_guess_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_no_two_guess_same_slope2))
+
+### symetric crit 
+
+fun_sym_no_two_guess_same_slope2_gp2 <-  dat2  %>% 
+  distinct(references) %>% 
+  bind_cols(tibble(fun = c(
+    function(x, p) p[5] + (1 - 2 * p[6])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       p[4] * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3]))),
+    function(x, p) p[7] + (1 - 2 * p[8])  *
+    (pnorm(x,  -p[1] + p[2], p[3]) + 
+       (1 - p[4]) * (pnorm(- x, - p[2] + p[1], p[3]) - pnorm(-x, + p[2] + p[1], p[3])))
+
+    )))
+
+fit_sym_no_two_guess_same_slope2_gp2 <- quickpsy(dat2 %>% 
+                                                  semi_join(
+                                                    best2 %>% 
+                                                      filter(best == "decision" | best == "full") %>% 
+                                                      select(subject, cond_per_block)), 
+                               orientation, response, 
+                grouping = .(subject, references, cond_per_block),
+                fun = fun_sym_no_two_guess_same_slope2_gp2,
+                xmin = -3, xmax = 3,
+                parini = list(pini_origin, c(0, 1.5), pini_scale,  
+                              c(0, 1), pini_lapse, pini_lapse, 
+                              pini_lapse, pini_lapse),
+                bootstrap = "none")
+
+model_selection_aic(fit_sym_no_two_guess_same_slope2_gp2$aic %>% 
+                      semi_join(best_sym_no_two_guess_same_slope2),
+                    fit_sym_no_two_guess_same_slope2$aic %>% 
+                      semi_join(best2 %>% 
+                                  filter(best == "decision" | best == "full") %>% 
+                                  select(subject, cond_per_block)) %>% 
+                      semi_join(best_sym_no_two_guess_same_slope2))
+
+
+
+```
+
+```{r fig.height=12, fig.width=10}
+ggplot() + facet_wrap(subject ~ cond_per_block, ncol = 3) +
+  geom_point(data = sym_averages_s_vs_d_best2 %>% filter(best == "decision" | best == "full"), 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d_best2 %>% filter(best == "decision"| best == "full"), 
+            aes(x = x, y = y, color = references, lty = "SDT")) +
+  geom_line(data = fit_sym_no_two_guess_same_slope2_gp$curves %>% 
+                semi_join(best_sym_no_two_guess_same_slope2), 
+            aes(x = x, y = y, color = references, lty = "Indecision model")) +
+  geom_line(data = fit_sym_no_two_guess_same_slope2_gp2$curves %>%
+              semi_join(best_sym_no_two_guess_same_slope2),
+            aes(x = x, y = y, color = references, lty = "Indecision model 2")) +
+  theme_grey() + theme(legend.position = "top") 
+```

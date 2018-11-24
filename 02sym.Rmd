@@ -453,6 +453,8 @@ sym_averages_s_vs_d_test <-
 sym_curves_s_vs_d_test <- 
   (fit_sym_same_guess$curves %>% semi_join(best_sym_no_absent_lapses_no_same_slope))
 
+sym_curves_s_vs_d_test_gp <- 
+  (fit_sym_same_guess_gp$curves %>% semi_join(best_sym_no_absent_lapses_no_same_slope))
 
 ggplot() + facet_wrap(subject ~ vertical) +
   geom_point(data = sym_averages_s_vs_d_test, 
@@ -494,20 +496,24 @@ ggplot() + facet_wrap(subject ~ vertical) +
   theme_grey() + theme(legend.position = "top") 
 ```
 
-```{r fig.height=8, fig.width=8}
+```{r fig.height=12, fig.width=8}
 sym_averages_s_vs_d_test <- 
   (fit_sym_absent_lapses_same_slope$averages %>% semi_join(best_sym_absent_lapses_same_slope))
 
 sym_curves_s_vs_d_test <- 
   (fit_sym_absent_lapses_same_slope$curves %>% semi_join(best_sym_absent_lapses_same_slope))
 
-
-ggplot() + facet_wrap(subject ~ vertical) +
+ggplot() + facet_wrap(subject ~ vertical, ncol = 4) +
   geom_point(data = sym_averages_s_vs_d_test, 
              aes(x = orientation, y = prob, color = references)) +
-  geom_line(data = sym_curves_s_vs_d_test, 
+  geom_line(data = sym_curves_s_vs_d_test,
             aes(x = x, y = y, color = references)) +
   theme_grey() + theme(legend.position = "top") 
+```
+
+#### Indecision model 
+```{r}
+
 ```
 
 ### Averages, curves and parameters 
@@ -536,6 +542,14 @@ sym_par_s_vs_d <-
   bind_rows((fit_sym_absent_lapses$par %>% semi_join(best_sym_absent_lapses_no_same_slope))) %>% 
   bind_rows((fit_sym_absent_lapses_same_slope$par %>% semi_join(best_sym_absent_lapses_same_slope)))
 
+sym_thre_s_vs_d <- 
+  (fit_sym_no_two_guess_same_slope$thresholds %>% semi_join(best_sym_no_two_guess_same_slope)) %>% 
+  bind_rows((fit_sym_guess_same_slope$thresholds %>% semi_join(best_sym_no_same_guess))) %>% 
+  bind_rows((fit_sym_same_guess$thresholds %>% semi_join(best_sym_no_absent_lapses_no_same_slope))) %>% 
+  bind_rows((fit_sym_same_guess_same_slope$thresholds %>% semi_join(best_sym_no_absent_lapses_same_slope))) %>% 
+  bind_rows((fit_sym_absent_lapses$thresholds %>% semi_join(best_sym_absent_lapses_no_same_slope))) %>% 
+  bind_rows((fit_sym_absent_lapses_same_slope$thresholds %>% semi_join(best_sym_absent_lapses_same_slope)))
+
 
 sym_par_s_vs_d_long <- sym_par_s_vs_d %>% 
   spread(parn,par) 
@@ -545,10 +559,23 @@ ggplot() + facet_wrap(subject ~ vertical) +
              aes(x = orientation, y = prob, color = references)) +
   geom_line(data = sym_curves_s_vs_d, 
             aes(x = x, y = y, color = references)) +
-  geom_vline(data = sym_averages_s_vs_d_long, 
+  geom_vline(data = sym_par_s_vs_d_long, 
            aes(xintercept = p1, lty = "p1")) +
     geom_vline(data = sym_par_s_vs_d_long, 
            aes(xintercept = p1 + p2, lty = "p1 +p2")) +
+  theme_grey() + theme(legend.position = "top") 
+```
+
+### Plotting thresholds
+
+```{r fig.height=15, fig.width=15}
+ggplot() + facet_wrap(subject ~ vertical) +
+  geom_point(data = sym_averages_s_vs_d, 
+             aes(x = orientation, y = prob, color = references)) +
+  geom_line(data = sym_curves_s_vs_d, 
+            aes(x = x, y = y, color = references)) +
+  geom_segment(data = sym_thre_s_vs_d, 
+           aes(x = thre, xend = thre, y = 0 , yend = prob, color = references)) +
   theme_grey() + theme(legend.position = "top") 
 ```
 
@@ -1424,10 +1451,16 @@ sym_par_s_vs_d_best_abs <- sym_par_s_vs_d_best %>%
 
 ### Save data
 ```{r}
+save(best, file = "logdata/best.RData")
 save(sym_averages_s_vs_d_best, file = "logdata/sym_averages_s_vs_d_best.RData")
 save(sym_curves_s_vs_d_best, file = "logdata/sym_curves_s_vs_d_best.RData")
+save(sym_thre_s_vs_d, file = "logdata/sym_thre_s_vs_d.RData")
 save(sym_par_s_vs_d_best, file = "logdata/sym_par_s_vs_d_best.RData")
 save(sym_par_s_vs_d_best_long, file = "logdata/sym_par_s_vs_d_best_long.RData")
 save(sym_par_s_vs_d_best_abs, file = "logdata/sym_par_s_vs_d_best_abs.RData")
-```
+save(best_sym_absent_lapses_same_slope, file = "logdata/best_sym_absent_lapses_same_slope.RData")
+save(best_sym_no_absent_lapses_same_slope, file = "logdata/best_sym_no_absent_lapses_same_slope.RData")
+save(best_sym_no_absent_lapses_no_same_slope, file = "logdata/best_sym_no_absent_lapses_no_same_slope.RData")
+save(best_sym_no_same_guess, file = "logdata/best_sym_no_same_guess.RData")
 
+```
