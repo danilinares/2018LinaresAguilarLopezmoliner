@@ -133,16 +133,18 @@ p_sym_bias <- ggplot() +
   geom_vline(xintercept = 0, size = size_line, lty = 2) +
   geom_hline(yintercept = 0, size = size_line, lty = 2) +
   geom_point(data = sym_par_s_vs_d_best_long, 
-             aes(x = p1, y = p2, color = best), alpha = .7) +
+             aes(x = p1, y = p2, color = best, shape = vertical), alpha = .7) +
   scale_color_manual(values = c("#377eb8", "#e41a1c", "#4daf4a","grey"), 
                      breaks = c("zero", "sensory", "decision", "full"),
                      labels = text_labels_model)  +
+  scale_shape_manual(labels = c("Horizontal", "Vertical"), values = c(16, 17)) +
   coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
   # xlim(-1.07, 1.07) +
   # ylim(-1.07, 1.07) +
   labs(x = text_sensory_bias, y = text_decisional_bias, 
-       color = text_best_model) +
+       color = text_best_model, shape = "Orientation") +
   theme(axis.line = element_line(size = size_line),
+        legend.key.height = unit(.75, "line"),
         axis.ticks = element_line(size = size_line),
         axis.title.y = element_text(hjust = 0.4), 
           plot.margin = unit(c(0, 0, 0, 0), "cm"))

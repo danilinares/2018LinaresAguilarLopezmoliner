@@ -147,21 +147,23 @@ p_asym_bias <- ggplot() +
   geom_vline(xintercept = 0, size = size_line, lty = 2) +
   geom_hline(yintercept = 0, size = size_line, lty = 2) +
   geom_point(data = asym_par_s_vs_d_best_long, 
-             aes(x = psensory, y = pdecisional, color = best), alpha = 0.5) +
+             aes(x = psensory, y = pdecisional, color = best, shape = vertical), alpha = 0.5) +
   scale_color_manual(values = c(col_full, col_response, 
                                 col_sensory, col_no_bias),
                      breaks = c("zero", "sensory", "response", "no sym crit"),
                      labels = c(text_zero, text_sensory, 
                                 "Sensory +\nsym.\ndecisional", 
                                 "Sensory +\nasym.\ndecisional")) +
+  scale_shape_manual(labels = c("Horizontal", "Vertical"), values = c(16, 17)) +
   coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
   #xlim(-1.07, 1.07) +
   #ylim(-1.07, 1.07) +
   labs(x = text_sensory_bias, y = text_decisional_bias, 
-       color = text_best_model) +
+       color = text_best_model, shape = "Orientation") +
   theme(axis.line = element_line(size = size_line),
         axis.ticks = element_line(size = size_line),
-        legend.key.height = unit(1.5, "lines"),
+        legend.key.height = unit(.75, "line"),
+       # legend.key.height = unit(1.5, "lines"),
         axis.title.y = element_text(hjust = 0.4), 
           plot.margin = unit(c(0, 0, 0, 0), "cm"))
 p_asym_bias
