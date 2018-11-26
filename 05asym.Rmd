@@ -785,7 +785,34 @@ asym_par_s_vs_d <-
   group_by(subject, vertical) %>% 
   transmute(temp = map(fit_asym_full_same_slope, "par")) %>% 
   unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_zero))) 
-  
+ 
+
+asym_dev_s_vs_d <- 
+  (fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full, "deviance")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_no_same_slope_sym_crit_same_no_zero)) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "deviance")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_no_sym_crit))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "deviance")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_no_same_no_zero))) %>%   
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "deviance")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_no_zero))) %>% 
+  bind_rows((fit_asym_best %>% 
+  group_by(subject, vertical) %>% 
+  transmute(temp = map(fit_asym_full_same_slope, "deviance")) %>% 
+  unnest(temp) %>% semi_join(best_asym_full_same_slope_sym_crit_same_zero))) 
+
+asym_dev_s_vs_d %>% 
+  filter(p_value_chi_sqr < alpha)
+
+
 asym_par_s_vs_d_long <- asym_par_s_vs_d %>% 
   spread(parn,par) %>% 
   mutate(pfirst = p1, 

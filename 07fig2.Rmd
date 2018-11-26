@@ -12,6 +12,8 @@ editor_options:
 library(tidyverse)
 library(quickpsy)
 library(cowplot)
+library(broom)
+library(ggsignif)
 
 list.files("R", full.names = TRUE) %>% walk(source)
 source("graphical_parameters.R")
@@ -38,7 +40,7 @@ plot_sym_psycho_best_asym <- function(subj, vert, title = "") {
   if (title == text_zero) color <- col_no_bias 
   if (title == text_sensory) color <- col_sensory
   if (title == text_response) color <- col_response
-  if (title == text_full) color <- col_full
+  if (title == text_full_asym) color <- col_full
   
   if (title == text_zero | title == text_response) y_text <- text_prob_asym
   else y_text <- ""
@@ -90,13 +92,13 @@ plot_sym_psycho_best_asym <- function(subj, vert, title = "") {
    geom_segment(data = asym_par_s_vs_d_best_long %>%
                   filter(subject == subj, vertical == vert) %>%
                   rename(Participant = subject),
-                aes(x = psensory, xend = psensory - pdecisional, 
+                aes(x = psensory, xend = psensory - pdecisional,
                     y = 0.05, yend = 0.05),
                 arrow = arrow(length = unit(0.03, "inches"))) +
   geom_segment(data = asym_par_s_vs_d_best_long %>%
                   filter(subject == subj, vertical == vert) %>%
                   rename(Participant = subject),
-                aes(x = psensory - pdecisional, xend = psensory - pdecisional, 
+                aes(x = psensory - pdecisional, xend = psensory - pdecisional,
                     y = 0.05, yend = 0.5),
                 size = size_line) +
   geom_text(data = asym_par_s_vs_d_best_long %>%
@@ -126,7 +128,7 @@ plot_psycho_ex_asym <- plot_grid(
   plot_sym_psycho_best_asym(subj = 14, vert = FALSE, title = text_zero),
   plot_sym_psycho_best_asym(subj = 3, vert = TRUE, title = text_sensory),
   plot_sym_psycho_best_asym(subj = 1, vert = FALSE, title = text_response),
-  plot_sym_psycho_best_asym(subj = 16, vert = TRUE, title = text_full), 
+  plot_sym_psycho_best_asym(subj = 16, vert = TRUE, title = text_full_asym), 
   nrow = 2, 
   labels = c("C", "D", "E", "F"), 
   hjust = 0, 
@@ -150,8 +152,8 @@ p_asym_bias <- ggplot() +
                                 col_sensory, col_no_bias),
                      breaks = c("zero", "sensory", "response", "no sym crit"),
                      labels = c(text_zero, text_sensory, 
-                                "Symmetric\ndecisional\nbias", 
-                                "Sensory +\ndecisional")) +
+                                "Sensory +\nsym.\ndecisional", 
+                                "Sensory +\nasym.\ndecisional")) +
   coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
   #xlim(-1.07, 1.07) +
   #ylim(-1.07, 1.07) +
@@ -167,7 +169,6 @@ p_asym_bias
 
 
 ```{r}
-
 
 asym_par_s_vs_d_best_abs_ci <- asym_par_s_vs_d_best_abs %>% 
   ungroup() %>% 

@@ -550,6 +550,17 @@ sym_thre_s_vs_d <-
   bind_rows((fit_sym_absent_lapses$thresholds %>% semi_join(best_sym_absent_lapses_no_same_slope))) %>% 
   bind_rows((fit_sym_absent_lapses_same_slope$thresholds %>% semi_join(best_sym_absent_lapses_same_slope)))
 
+sym_dev_s_vs_d <- 
+  (fit_sym_no_two_guess_same_slope$deviance %>% semi_join(best_sym_no_two_guess_same_slope)) %>% 
+  bind_rows((fit_sym_guess_same_slope$deviance %>% semi_join(best_sym_no_same_guess))) %>% 
+  bind_rows((fit_sym_same_guess$deviance %>% semi_join(best_sym_no_absent_lapses_no_same_slope))) %>% 
+  bind_rows((fit_sym_same_guess_same_slope$deviance %>% semi_join(best_sym_no_absent_lapses_same_slope))) %>% 
+  bind_rows((fit_sym_absent_lapses$deviance %>% semi_join(best_sym_absent_lapses_no_same_slope))) %>% 
+  bind_rows((fit_sym_absent_lapses_same_slope$deviance %>% semi_join(best_sym_absent_lapses_same_slope)))
+
+
+sym_dev_s_vs_d %>% 
+  filter(p_value_chi_sqr < alpha)
 
 sym_par_s_vs_d_long <- sym_par_s_vs_d %>% 
   spread(parn,par) 

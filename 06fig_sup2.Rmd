@@ -38,11 +38,11 @@ p_fig_sup2 <- ggplot() +
    geom_line(data = asym_curves_s_vs_d_best %>% 
                rename(Participant = subject), 
              aes(x = x, y = y, color = best, lty = reference)) +
-  scale_color_manual(values = c("#e41a1c", "#fb9a99", "#4daf4a","grey"),
+  scale_color_manual(values = c("#e41a1c", "#006837", "#4daf4a","grey"),
                      breaks = c("zero", "sensory", "response", "no sym crit"),
                      labels = c("No bias", "Sensory bias", 
-                                "Symmetric decisional bias", 
-                                "Sensory + decisional"))  +
+                                "Sensory + sym. decisional", 
+                                "Sensory + asym. decisional"))  +
   # scale_linetype_manual(values = c(1, 2, 1, 2)) +
   scale_shape_manual(breaks = c("Right", "Left", "Top", "Bottom"),
                      values = c(15, 17, 16, 3)) +

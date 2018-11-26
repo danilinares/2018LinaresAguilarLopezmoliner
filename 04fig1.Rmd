@@ -150,41 +150,6 @@ p_sym_bias
 ```
   
 ```{r}
-
-# sym_par_s_vs_d_best_abs_boot <- sym_par_s_vs_d_best_abs %>% 
-#   group_by(parn) %>% 
-#   nest() %>% 
-#   mutate(b = map(data, ~boot(.$abs_par,  
-#                              statistic = 
-#                                function(data, i){
-#                                  d <- data[i]
-#                                  mean(d)  
-#                                  }, 
-#                              R=10000)),
-#          y = map_dbl(b, "t0"),
-#          samples = map(b, "t"),
-#          ci = map(b, ~boot.ci(., type = "perc")),
-#          ymin = map_dbl(ci, ~.$percent[1, 4]),
-#          ymax = map_dbl(ci, ~.$percent[1, 5]))
-# 
-# sym_par_s_vs_d_best_abs_boot_samples <- sym_par_s_vs_d_best_abs_boot %>% 
-#   select(parn, samples) %>% 
-#   unnest(samples) %>% 
-#   group_by(parn) %>% 
-#   mutate(row = row_number()) %>% 
-#   group_by(row) %>% 
-#   spread(parn, samples) %>% 
-#   rename(decision = `Decisional\nbias`, sensory = `Sensory\nbias`) %>% 
-#   mutate(dif = sensory - decision) %>% 
-#   ungroup() %>% 
-#   summarise(ymin = quantile(dif, .025),
-#             ymax = quantile(dif, .975))
-# 
-# 
-
-
-
-
 sym_par_s_vs_d_best_abs_ci <- sym_par_s_vs_d_best_abs %>% 
   ungroup() %>% 
   select(parn, abs_par) %>% 
@@ -199,7 +164,6 @@ sym_par_s_vs_d_best_abs_ci <- sym_par_s_vs_d_best_abs %>%
 
 sym_par_s_vs_d_best_abs %>% 
   t.test(abs_par ~ parn, data = ., paired = TRUE) 
-
 
   p_sym_bias_abs <- ggplot(data = sym_par_s_vs_d_best_abs, 
              aes(x = reorder(parn, desc(parn)), y = abs_par))+

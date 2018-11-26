@@ -86,15 +86,21 @@ p_corr <- ggplot(data = sensory_bias %>%
   geom_abline(slope = 1, intercept = 0, lty = 2, size = size_line) +
   geom_vline(xintercept = 0, lty = 2, size = size_line) +
   geom_hline(yintercept = 0, lty = 2, size = size_line) +
-  geom_point(aes(x = sym - 0.03, y = asym + 0.03, color = best_sym,
+  geom_point(aes(x = sym, y = asym + 0.03, fill = best_sym, color = best_sym, 
                  shape = "Asymmetric"),
-             size = 2, alpha = .75) +
-  geom_point(aes(x = sym + 0.03, y = asym - 0.03 , color = best_asym,
+             size = 1.5, alpha = .75) +
+  geom_point(aes(x = sym, y = asym - 0.03 , fill = best_asym, color = best_asym, 
                  shape = "Symmetric"),
-              size = 2, alpha = .75) +
+              size = 1.5, alpha = .75) +
   geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.75) +#+
-  scale_shape_manual(values = c(15, 16)) +
+  scale_shape_manual(values = c(24, 25)) +
   scale_color_manual(values = c(col_decision, col_full,
+                               col_response, col_sensory, col_no_bias),
+                   breaks = c("zero", "sensory",
+                              "decision", "response","full"),
+                   labels = c(text_zero, text_sensory,
+                              text_decision, text_response, "Sensory + decisional (Sym. task)\nSensory + asym. decisional (Asym. task")) +
+    scale_fill_manual(values = c(col_decision, col_full,
                                col_response, col_sensory, col_no_bias),
                    breaks = c("zero", "sensory",
                               "decision", "response","full"),
@@ -104,11 +110,12 @@ p_corr <- ggplot(data = sensory_bias %>%
   labs(y = expression(paste("Sensory bias ", bold("asymmetric"), " task (deg)")),
        x = expression(paste("Sensory bias ", bold("symmetric"), " task (deg)")),
        shape = "Task",
-       color = text_best_model) +
+       color = text_best_model,
+       fill = text_best_model) +
   theme(axis.line = element_line(size = size_line),
         axis.ticks = element_line(size = size_line),
-        legend.key.height = unit(.85, "lines")) +
-  guides(shape = guide_legend(reverse = TRUE))
+        legend.key.height = unit(.85, "lines")) #+
+  #guides(shape = guide_legend(reverse = TRUE))
 
 p_corr
 ```
