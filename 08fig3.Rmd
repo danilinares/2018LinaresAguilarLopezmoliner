@@ -99,13 +99,13 @@ p_corr <- ggplot(data = sensory_bias %>%
                    breaks = c("zero", "sensory",
                               "decision", "response","full"),
                    labels = c(text_zero, text_sensory,
-                              text_decision, text_response, "Sensory + decisional (Sym. task)\nSensory + asym. decisional (Asym. task")) +
+                              text_decision, text_response, "Sensory + decisional (Sym task)\nSensory + asym. decisional (Asym. task)")) +
     scale_fill_manual(values = c(col_decision, col_full,
                                col_response, col_sensory, col_no_bias),
                    breaks = c("zero", "sensory",
                               "decision", "response","full"),
                    labels = c(text_zero, text_sensory,
-                              text_decision, text_response, text_full)) +
+                              text_decision, text_response, "Sensory + decisional (Sym task)\nSensory + asym. decisional (Asym. task)")) +
    coord_equal(xlim = c(-1.07, 1.07), ylim = c(-1.07, 1.07)) +
   labs(y = expression(paste("Sensory bias ", bold("asymmetric"), " task (deg)")),
        x = expression(paste("Sensory bias ", bold("symmetric"), " task (deg)")),
@@ -189,7 +189,7 @@ p_corr_rot <- ggplot(data = sensory_bias_rot,
   theme(axis.line = element_line(size = size_line), 
         axis.ticks = element_line(size = size_line),
         legend.key.height = unit(.75, "lines"),
-        legend.position = c(.9, .18)) +
+        legend.position = c(.8, .18)) +
   labs(x = expression(paste("Sensory bias for ", bold("vertical"), " grating (deg)")),
        y = expression(paste("Sensory bias for ", bold("horizontal"), " grating (deg)")),
        shape = "Task", color = "Task") +
@@ -208,12 +208,12 @@ p_fig_3 <- plot_grid(
   hjust = 0, 
   vjust = 1.1,
   align = "h",
-  rel_widths = c(.6, .4)
+  rel_widths = c(.65, .35)
 )
 
 save_plot("figures/figure3.pdf", p_fig_3, 
           base_width = two_column_width,
-          base_height =  0.34 * two_column_width)
+          base_height =  0.4 * two_column_width)
 
 
 ```

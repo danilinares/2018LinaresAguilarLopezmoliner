@@ -196,10 +196,23 @@ $(document).ready(function () {
 <h4>Absent lapses same slope</h4>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImdyb3VwZWRfZGYiLCJ0YmxfZGYiLCJ0YmwiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjIsIm5yb3ciOjE3fSwicmRmIjoiSDRzSUFBQUFBQUFBQTNWUVMyN0NNQkNkT0lTUEN3WEVPWWpVbnFFbjZJcXRNYVlOR0JzNVR0c2xOK1lHaExFWlMyblVMcDduK2VuTjkvMXQ4OG8zSEFBWTVFVUdMRWM2WVBoa01JQkppRDhBK1NvYUFHYUlKZkdBNkNZVWlDRmhqQWpKb2ZBVFlrcVlJeFpVZzFPRTJPeUJ2emo4d3p1K1h3TVhVb3U2cGtaSjVEdmhSYmwzNHFUNmRvTmFzak1TUjNXelBTanA2VHYrVXM1WFV1aGU3c1RaN3pMbGg5dXdDejV0MjE0eDNIcm1rVDM3eWhxMHNoV2RxenRoNW5yQ3ZER2g5RzR0UHh0elhML1F5ZElaWnNTWEhjNGVMZk9XU2hWVWFxak1SMlZVMmxpTHJkTDBlY1lWNGdibDJWVW1MY3hSclV0dnZVZytMcTFPU3R3TmJuZFZqWW1MUEFJQUFBPT0ifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubW9kZWxfc2VsZWN0aW9uX2FpYyhmaXRfc3ltX2Fic2VudF9sYXBzZXNfc2FtZV9zbG9wZV9ncDIkYWljLFxuICAgICAgICAgICAgICAgICAgICBmaXRfc3ltX2Fic2VudF9sYXBzZXNfc2FtZV9zbG9wZSRhaWMgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgIHNlbWlfam9pbihiZXN0ICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBmaWx0ZXIoYmVzdCA9PSBcImRlY2lzaW9uXCIgfCBiZXN0ID09IFwiZnVsbFwiKSAlPiUgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc2VsZWN0KHN1YmplY3QsIHZlcnRpY2FsKSkgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgIHNlbWlfam9pbihiZXN0X3N5bV9hYnNlbnRfbGFwc2VzX3NhbWVfc2xvcGUpKVxuXG5gYGAifQ== -->
+<pre class="r"><code>model_selection_aic(fit_sym_absent_lapses_same_slope_gp2$aic,
+                    fit_sym_absent_lapses_same_slope$aic %&gt;% 
+                      semi_join(best %&gt;% 
+                                  filter(best == &quot;decision&quot; | best == &quot;full&quot;) %&gt;% 
+                                  select(subject, vertical)) %&gt;% 
+                      semi_join(best_sym_absent_lapses_same_slope))
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3ViamVjdFwiLCBcInZlcnRpY2FsXCIpXG5Kb2luaW5nLCBieSA9IGMoXCJzdWJqZWN0XCIsIFwidmVydGljYWxcIilcbiJ9 -->
+<pre><code>Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)
+Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImdyb3VwZWRfZGYiLCJ0YmxfZGYiLCJ0YmwiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjEwLCJucm93Ijo1fSwicmRmIjoiSDRzSUFBQUFBQUFBQXd0eWlURGlpdUJpWUdCZ1ltQm1aV1JnWWdZeVdaaUFCQ01EQ3dNbmlLNWdZR0FXQmpKQWluaUJtQldrQWtxekFURW5WSTRMS3NZQTFvd0FJRFlmU082QWNkTDdOWWQxK1ErWS9Oc2JHTE40MmdGYnZYZWFabWMrSFhBTTVvb3BEMlk0WUx4L3gvOTVjcXZSN0VISFlMTWMzQ0ZtT1hoQXpISUltRjR1TWp1dDBpRVlZcGFETzl3c0pMdXR0Y0YyUndzRVErdys2M25BTVU1Y2VNNzdYUWVNTHgrZXhmdnRENUxkekZnd3hHNDNpRmtPN2hDekhBTEVRWFl2Y1FpNkJ6Ykx3UTF1bGdEWUxFaEFzaFduSnVmbnBaRE5nOXB1ZnpCbzFlS0RXUXZBZE1lN1VqQzl2emZmL3NpMHBFM1QzMVhiSDNFS0VSSE4wa2VMUnRia25NVGlZcWlUWUlKY0tZa2xpWHBwUlltNXFlaks4NEJpTU9WY1VFSDI0dEtrck5Ua0VpaVhveXkxcUNRek9URUhKcDJUbjU2VG1XMEljM2RlZkVGaUVZekhrcGlaYklpcTBBaEZvUkdTUWpnN0tiVVlaaHRqQVpvVE9Zdnl5L1ZnemdSRkdsTURrUGovLy85dklQVVBUVEY3ZmtGSlpuNGVVQ21UTURSK2tRT0NzUWhOZ0w4MEQyUjBpbTV5Um1sZXRxNHhOSDNEMGpVdmxNMkt4T2FDV01uOEh6M2VVL1BTTS9OU1lRR2JrNWlVQ2dzeFBxQVh3RDdRS3lqS3pJUDVsQXNvV3F4WGtsOENEMW11NVB3Y21Ballid3ovQUhkN0pIbTVBd0FBIn0= -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":["subject"],"name":[1],"type":["int"],"align":["right"]},{"label":["vertical"],"name":[2],"type":["lgl"],"align":["right"]}],"data":[{"1":"2","2":"FALSE"},{"1":"2","2":"TRUE"},{"1":"3","2":"TRUE"},{"1":"4","2":"FALSE"},{"1":"4","2":"TRUE"},{"1":"5","2":"TRUE"},{"1":"6","2":"FALSE"},{"1":"6","2":"TRUE"},{"1":"8","2":"FALSE"},{"1":"9","2":"FALSE"},{"1":"10","2":"TRUE"},{"1":"11","2":"FALSE"},{"1":"12","2":"FALSE"},{"1":"12","2":"TRUE"},{"1":"15","2":"TRUE"},{"1":"16","2":"TRUE"},{"1":"17","2":"FALSE"}],"options":{"columns":{"min":{},"max":[10],"total":[2]},"rows":{"min":[10],"max":[10],"total":[17]},"pages":{}}}
+{"columns":[{"label":["subject"],"name":[1],"type":["int"],"align":["right"]},{"label":["vertical"],"name":[2],"type":["lgl"],"align":["right"]},{"label":["loglik1"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["n_par1"],"name":[4],"type":["int"],"align":["right"]},{"label":["aic1"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["loglik2"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["n_par2"],"name":[7],"type":["int"],"align":["right"]},{"label":["aic2"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["best"],"name":[9],"type":["chr"],"align":["left"]},{"label":["p"],"name":[10],"type":["dbl"],"align":["right"]}],"data":[{"1":"4","2":"FALSE","3":"-19.38647","4":"4","5":"46.77294","6":"-19.38647","7":"3","8":"44.77294","9":"second","10":"0.1353353"},{"1":"5","2":"TRUE","3":"-20.99508","4":"4","5":"49.99015","6":"-20.99508","7":"3","8":"47.99015","9":"second","10":"0.1353353"},{"1":"6","2":"FALSE","3":"-29.18332","4":"4","5":"66.36664","6":"-29.18332","7":"3","8":"64.36664","9":"second","10":"0.1353353"},{"1":"9","2":"FALSE","3":"-34.64875","4":"4","5":"77.29751","6":"-34.73508","7":"3","8":"75.47016","9":"second","10":"0.1608394"},{"1":"10","2":"TRUE","3":"-19.74892","4":"4","5":"47.49783","6":"-19.82720","7":"3","8":"45.65441","9":"second","10":"0.1582742"}],"options":{"columns":{"min":{},"max":[10],"total":[10]},"rows":{"min":[10],"max":[10],"total":[5]},"pages":{}}}
   </script>
 </div>
 <!-- rnb-frame-end -->
@@ -315,24 +328,28 @@ Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)</code></pre>
 <h4>Sym same guess</h4>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZml0X3N5bV9zYW1lX2d1ZXNzX2dwMiA8LSBxdWlja3BzeShkYXRfc3ltICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc2VtaV9qb2luKFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGJlc3QgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZmlsdGVyKGJlc3QgPT0gXCJkZWNpc2lvblwiIHwgYmVzdCA9PSBcImZ1bGxcIikgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc2VsZWN0KHN1YmplY3QsIHZlcnRpY2FsKSksIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9yaWVudGF0aW9uLCByZXNwb25zZSwgXG4gICAgICAgICAgICAgICAgZ3JvdXBpbmcgPSAuKHN1YmplY3QsIHZlcnRpY2FsLCByZWZlcmVuY2VzKSxcbiAgICAgICAgICAgICAgICBmdW4gPSBmdW5fc3ltX3NhbWVfZ3Vlc3NfZ3AyLFxuICAgICAgICAgICAgICAgIHhtaW4gPSAtMywgeG1heCA9IDMsXG4gICAgICAgICAgICAgICAgcGFyaW5pID0gbGlzdChwaW5pX29yaWdpbiwgYygwLCAxLjUpLCBwaW5pX3NjYWxlLCBjKC0xLjUsIDApLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGMoMCwgMSksIHBpbmlfbGFwc2UsIHBpbmlfc2NhbGUpLFxuICAgICAgICAgICAgICAgIGJvb3RzdHJhcCA9IFwibm9uZVwiKVxuXG5gYGAifQ== -->
-<pre class="r"><code>fit_sym_same_guess_gp2 &lt;- quickpsy(dat_sym %&gt;% 
-                                                  semi_join(
-                                                    best %&gt;% 
-                                                      filter(best == &quot;decision&quot; | best == &quot;full&quot;) %&gt;% 
-                                                      select(subject, vertical)), 
-                               orientation, response, 
-                grouping = .(subject, vertical, references),
-                fun = fun_sym_same_guess_gp2,
-                xmin = -3, xmax = 3,
-                parini = list(pini_origin, c(0, 1.5), pini_scale, c(-1.5, 0), 
-                              c(0, 1), pini_lapse, pini_scale),
-                bootstrap = &quot;none&quot;)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubW9kZWxfc2VsZWN0aW9uX2FpYyhmaXRfc3ltX3NhbWVfZ3Vlc3NfZ3AkYWljICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oYmVzdF9zeW1fbm9fYWJzZW50X2xhcHNlc19ub19zYW1lX3Nsb3BlKSxcbiAgICAgICAgICAgICAgICAgICAgZml0X3N5bV9zYW1lX2d1ZXNzJGFpYyAlPiUgXG4gICAgICAgICAgICAgICAgICAgICAgc2VtaV9qb2luKGJlc3QgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZpbHRlcihiZXN0ID09IFwiZGVjaXNpb25cIiB8IGJlc3QgPT0gXCJmdWxsXCIpICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZWxlY3Qoc3ViamVjdCwgdmVydGljYWwpKSAlPiUgXG4gICAgICAgICAgICAgICAgICAgICAgc2VtaV9qb2luKGJlc3Rfc3ltX25vX2Fic2VudF9sYXBzZXNfbm9fc2FtZV9zbG9wZSkpXG5cbmBgYCJ9 -->
+<pre class="r"><code>model_selection_aic(fit_sym_same_guess_gp$aic %&gt;% 
+                      semi_join(best_sym_no_absent_lapses_no_same_slope),
+                    fit_sym_same_guess$aic %&gt;% 
+                      semi_join(best %&gt;% 
+                                  filter(best == &quot;decision&quot; | best == &quot;full&quot;) %&gt;% 
+                                  select(subject, vertical)) %&gt;% 
+                      semi_join(best_sym_no_absent_lapses_no_same_slope))
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3ViamVjdFwiLCBcInZlcnRpY2FsXCIpXG4ifQ== -->
-<pre><code>Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3ViamVjdFwiLCBcInZlcnRpY2FsXCIpXG5Kb2luaW5nLCBieSA9IGMoXCJzdWJqZWN0XCIsIFwidmVydGljYWxcIilcbkpvaW5pbmcsIGJ5ID0gYyhcInN1YmplY3RcIiwgXCJ2ZXJ0aWNhbFwiKVxuIn0= -->
+<pre><code>Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)
+Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)
+Joining, by = c(&quot;subject&quot;, &quot;vertical&quot;)</code></pre>
 <!-- rnb-output-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImdyb3VwZWRfZGYiLCJ0YmxfZGYiLCJ0YmwiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjEwLCJucm93IjoyfSwicmRmIjoiSDRzSUFBQUFBQUFBQXd0eWlURGlpdUJpWUdCZ1ltQm1aV1JnWWdZeVdaaUFCQ01EQ3dNbmlLNWdZR0FXQmpKQWluakJDaGtZT0tCc0xpaWZrUUVDK0VEOEF6clQ2cmJHcGhZY3NHM2dLYjE0MmhkSkh6c1VnOVU1dUhyYlI2M2J0TU1oeUlITjZzWFRaWEQ5UnBwRjg1VnJyaDZ3YlhTK3lycWJCMGsvS3hSRDlMdEQxRGtFT2l4ODFYUzNEU2dtQUZZSGNUaHJXbVpSY1FtVXcxYWNtcHlmbHdMWDZ2SnRLNi9hV1diN1NlOTFSU2E5VVVMek0ydHlUbUp4TWRROG1DQlhTbUpKb2w1YVVXSnVLcnJ5UEtBWVREa1hWSkM5dURRcEt6VVo1Z0NPc3RTaWtzemt4QnlZZEU1K2VrNW10aUhNZlhueEJZbEZNQjVMWW1heUlhcENJeFNGUmtnSzRleWtWTGgzR1F2UW5NaFpsRit1QjNNbU9EUWJnTVQvLy8vL0FhbC9hSXJaOHd0S012UHpnRXFaaEtFQmpod1FqRVZvQXZ5bGVTQ2pVM1NUTTByenNuVk5vQWtEbGloNG9Xd21KRFlYeEVybS8xQ2pXR0hlUzgxTHo4eExoUVZzVG1KU0tpekUrSUJlQVB0QXI2QW9Ndy9tVXk2Z2FMRmVTWDRKUEdTNWt2TnpZQ0pndnpIOEF3QlJ3UWRiNWdJQUFBPT0ifQ== -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["subject"],"name":[1],"type":["int"],"align":["right"]},{"label":["vertical"],"name":[2],"type":["lgl"],"align":["right"]},{"label":["loglik1"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["n_par1"],"name":[4],"type":["int"],"align":["right"]},{"label":["aic1"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["loglik2"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["n_par2"],"name":[7],"type":["int"],"align":["right"]},{"label":["aic2"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["best"],"name":[9],"type":["chr"],"align":["left"]},{"label":["p"],"name":[10],"type":["dbl"],"align":["right"]}],"data":[{"1":"8","2":"TRUE","3":"-14.29394","4":"7","5":"42.58787","6":"-18.16191","7":"5","8":"46.32381","9":"first","10":"41.92740025"},{"1":"13","2":"FALSE","3":"-29.50019","4":"7","5":"73.00038","6":"-29.50494","7":"5","8":"69.00988","9":"second","10":"0.01849051"}],"options":{"columns":{"min":{},"max":[10],"total":[10]},"rows":{"min":[10],"max":[10],"total":[2]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
@@ -727,58 +744,22 @@ Joining, by = c(&quot;subject&quot;, &quot;cond_per_block&quot;)</code></pre>
 <h4>sym no two guess same slope</h4>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZml0X3N5bV9ub190d29fZ3Vlc3Nfc2FtZV9zbG9wZTJfZ3AyIDwtIHF1aWNrcHN5KGRhdDIgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYmVzdDIgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZmlsdGVyKGJlc3QgPT0gXCJkZWNpc2lvblwiIHwgYmVzdCA9PSBcImZ1bGxcIikgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc2VsZWN0KHN1YmplY3QsIGNvbmRfcGVyX2Jsb2NrKSksIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9yaWVudGF0aW9uLCByZXNwb25zZSwgXG4gICAgICAgICAgICAgICAgZ3JvdXBpbmcgPSAuKHN1YmplY3QsIHJlZmVyZW5jZXMsIGNvbmRfcGVyX2Jsb2NrKSxcbiAgICAgICAgICAgICAgICBmdW4gPSBmdW5fc3ltX25vX3R3b19ndWVzc19zYW1lX3Nsb3BlMl9ncDIsXG4gICAgICAgICAgICAgICAgeG1pbiA9IC0zLCB4bWF4ID0gMyxcbiAgICAgICAgICAgICAgICBwYXJpbmkgPSBsaXN0KHBpbmlfb3JpZ2luLCBjKDAsIDEuNSksIHBpbmlfc2NhbGUsICBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGMoMCwgMSksIHBpbmlfbGFwc2UsIHBpbmlfbGFwc2UsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGluaV9sYXBzZSwgcGluaV9sYXBzZSksXG4gICAgICAgICAgICAgICAgYm9vdHN0cmFwID0gXCJub25lXCIpXG5cbmBgYCJ9 -->
-<pre class="r"><code>fit_sym_no_two_guess_same_slope2_gp2 &lt;- quickpsy(dat2 %&gt;% 
-                                                  semi_join(
-                                                    best2 %&gt;% 
-                                                      filter(best == &quot;decision&quot; | best == &quot;full&quot;) %&gt;% 
-                                                      select(subject, cond_per_block)), 
-                               orientation, response, 
-                grouping = .(subject, references, cond_per_block),
-                fun = fun_sym_no_two_guess_same_slope2_gp2,
-                xmin = -3, xmax = 3,
-                parini = list(pini_origin, c(0, 1.5), pini_scale,  
-                              c(0, 1), pini_lapse, pini_lapse, 
-                              pini_lapse, pini_lapse),
-                bootstrap = &quot;none&quot;)
-</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3ViamVjdFwiLCBcImNvbmRfcGVyX2Jsb2NrXCIpXG4ifQ== -->
-<pre><code>Joining, by = c(&quot;subject&quot;, &quot;cond_per_block&quot;)</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZml0X3N5bV9ub190d29fZ3Vlc3Nfc2FtZV9zbG9wZTJfZ3AyIDwtIHF1aWNrcHN5KGRhdDIgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYmVzdDIgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZmlsdGVyKGJlc3QgPT0gXCJkZWNpc2lvblwiIHwgYmVzdCA9PSBcImZ1bGxcIikgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc2VsZWN0KHN1YmplY3QsIGNvbmRfcGVyX2Jsb2NrKSksIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9yaWVudGF0aW9uLCByZXNwb25zZSwgXG4gICAgICAgICAgICAgICAgZ3JvdXBpbmcgPSAuKHN1YmplY3QsIHJlZmVyZW5jZXMsIGNvbmRfcGVyX2Jsb2NrKSxcbiAgICAgICAgICAgICAgICBmdW4gPSBmdW5fc3ltX25vX3R3b19ndWVzc19zYW1lX3Nsb3BlMl9ncDIsXG4gICAgICAgICAgICAgICAgeG1pbiA9IC0zLCB4bWF4ID0gMyxcbiAgICAgICAgICAgICAgICBwYXJpbmkgPSBsaXN0KHBpbmlfb3JpZ2luLCBjKDAsIDEuNSksIHBpbmlfc2NhbGUsICBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGMoMCwgMSksIHBpbmlfbGFwc2UsIHBpbmlfbGFwc2UsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGluaV9sYXBzZSwgcGluaV9sYXBzZSksXG4gICAgICAgICAgICAgICAgYm9vdHN0cmFwID0gXCJub25lXCIpXG5gYGAifQ== -->
-<pre class="r"><code>fit_sym_no_two_guess_same_slope2_gp2 &lt;- quickpsy(dat2 %&gt;% 
-                                                  semi_join(
-                                                    best2 %&gt;% 
-                                                      filter(best == &quot;decision&quot; | best == &quot;full&quot;) %&gt;% 
-                                                      select(subject, cond_per_block)), 
-                               orientation, response, 
-                grouping = .(subject, references, cond_per_block),
-                fun = fun_sym_no_two_guess_same_slope2_gp2,
-                xmin = -3, xmax = 3,
-                parini = list(pini_origin, c(0, 1.5), pini_scale,  
-                              c(0, 1), pini_lapse, pini_lapse, 
-                              pini_lapse, pini_lapse),
-                bootstrap = &quot;none&quot;)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3ViamVjdFwiLCBcImNvbmRfcGVyX2Jsb2NrXCIpXG4ifQ== -->
-<pre><code>Joining, by = c(&quot;subject&quot;, &quot;cond_per_block&quot;)</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubW9kZWxfc2VsZWN0aW9uX2FpYyhmaXRfc3ltX25vX3R3b19ndWVzc19zYW1lX3Nsb3BlMl9ncDIkYWljICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oYmVzdF9zeW1fbm9fdHdvX2d1ZXNzX3NhbWVfc2xvcGUyKSxcbiAgICAgICAgICAgICAgICAgICAgZml0X3N5bV9ub190d29fZ3Vlc3Nfc2FtZV9zbG9wZTIkYWljICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oYmVzdDIgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZpbHRlcihiZXN0ID09IFwiZGVjaXNpb25cIiB8IGJlc3QgPT0gXCJmdWxsXCIpICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZWxlY3Qoc3ViamVjdCwgY29uZF9wZXJfYmxvY2spKSAlPiUgXG4gICAgICAgICAgICAgICAgICAgICAgc2VtaV9qb2luKGJlc3Rfc3ltX25vX3R3b19ndWVzc19zYW1lX3Nsb3BlMikpXG5gYGAifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubW9kZWxfc2VsZWN0aW9uX2FpYyhmaXRfc3ltX25vX3R3b19ndWVzc19zYW1lX3Nsb3BlMl9ncDIkYWljICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oYmVzdF9zeW1fbm9fdHdvX2d1ZXNzX3NhbWVfc2xvcGUyKSxcbiAgICAgICAgICAgICAgICAgICAgZml0X3N5bV9ub190d29fZ3Vlc3Nfc2FtZV9zbG9wZTIkYWljICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICBzZW1pX2pvaW4oYmVzdDIgJT4lIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZpbHRlcihiZXN0ID09IFwiZGVjaXNpb25cIiB8IGJlc3QgPT0gXCJmdWxsXCIpICU+JSBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZWxlY3Qoc3ViamVjdCwgY29uZF9wZXJfYmxvY2spKSAlPiUgXG4gICAgICAgICAgICAgICAgICAgICAgc2VtaV9qb2luKGJlc3Rfc3ltX25vX3R3b19ndWVzc19zYW1lX3Nsb3BlMikpXG5cbmBgYCJ9 -->
 <pre class="r"><code>model_selection_aic(fit_sym_no_two_guess_same_slope2_gp2$aic %&gt;% 
                       semi_join(best_sym_no_two_guess_same_slope2),
                     fit_sym_no_two_guess_same_slope2$aic %&gt;% 
                       semi_join(best2 %&gt;% 
                                   filter(best == &quot;decision&quot; | best == &quot;full&quot;) %&gt;% 
                                   select(subject, cond_per_block)) %&gt;% 
-                      semi_join(best_sym_no_two_guess_same_slope2))</code></pre>
+                      semi_join(best_sym_no_two_guess_same_slope2))
+</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3ViamVjdFwiLCBcImNvbmRfcGVyX2Jsb2NrXCIpXG5Kb2luaW5nLCBieSA9IGMoXCJzdWJqZWN0XCIsIFwiY29uZF9wZXJfYmxvY2tcIilcbkpvaW5pbmcsIGJ5ID0gYyhcInN1YmplY3RcIiwgXCJjb25kX3Blcl9ibG9ja1wiKVxuIn0= -->
 <pre><code>Joining, by = c(&quot;subject&quot;, &quot;cond_per_block&quot;)
 Joining, by = c(&quot;subject&quot;, &quot;cond_per_block&quot;)
 Joining, by = c(&quot;subject&quot;, &quot;cond_per_block&quot;)</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImdyb3VwZWRfZGYiLCJ0YmxfZGYiLCJ0YmwiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjEwLCJucm93IjoxfSwicmRmIjoiSDRzSUFBQUFBQUFBQTEyUnUwN0RNQlNHVDI2VVdxSWdWYXdnTWRDRlJtb0dHT25BRXdCRHQ4cHhUQWt4ZHBTTFlPUWxlQXRtR0pBUUkrS2hXdXlRRTdueFlQOCs1N1BQN2ZwcUVaRUZBUUFYdk1BQjE5UFNkL1htZ0E5RGN6NERlR010RExUWE9BQUNTeHQ0WlBUMy9QQmk4dnB4YXZsMjBUZS83WHd0ZXpaNVAvcmFXT3lnWTIvZTBIZGdKYkpUY3Faa2d0VGx6eS85ckk5UGV1a0dUTkN5N0QwbENhMW9lRmZRUjk3SHBiWWhUbHJqb0t6akI4NnE5am95WVpjNUw1YXhVQ3hEU0tpVlNMTVpaaWVYT1MzdzV0T1V6YmJCYUF1TUxMRFRNUzh4cHBQM0VoMFc2aW5FWkUzTDNCZTliZlRTeDdvSEQxUmVwVXBxMUIyMzA3TGI0UlE5dzM0dHpkZkpsTjNYTXB1ZXQ5TTJVd0ZyUW82bHlYOUlENmNVWUhsY3JsTEpzYjJDeGx4Z0gzVUpUUVZoWHFRU0t5WGFXb2FWcWloeWhDbUJscVkyV1A4Qkt3Zkk0YWNDQUFBPSJ9 -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImdyb3VwZWRfZGYiLCJ0YmxfZGYiLCJ0YmwiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjEwLCJucm93IjoxfSwicmRmIjoiSDRzSUFBQUFBQUFBQTEyUnUwN0RNQlNHVDI2VVdxSWdWYXdnTWRDRlJrb1dSanJ3Qk1EUXJYSmNVMEtNSGVVaUdIa0ozb0laaGtxSUVmRlFMWGJJaWR4NHNIK2Y4OW5uZG5NOWo4bWNBSUFMWHVDQTYybnB1M3B6d0llaE9WOEF2TEVXQmpwb0hBQ0JwUTA4TXZwN2RudzVlZnM4dDN6NzZKdmRkYjZXdlpoOG5IeHRMWGJRc2JmdjZEdXlFdGtyT1ZOeWlkVFZ6eTlkMTZkbnZYUURKbWhaOXA2U0phMW9lRi9RSjk3SHBiWWhUbHJqb0t5VFI4NnE5am95WVJjNUx4YUpVQ3hEU0tpVlNMTUlzNU9MbkJaNDgybktvbDB3M2dGakMreDB3a3VNNmVTOVJJZUZlZzR4V2RNeTkxVnZXNzMwc2VuQkE1VlhxWklhZGNmdHRPeDJPRVhQY0ZoTDgvVnl5aDVxbVUyamR0cG1LbUJOeUxFMCtRL3A0WlFDTEkvTFZTbzV0bGZRaEF2c295NmhxU0RNaTFSaXBVUmJ5N0JTRlVXT01DWFEwdFFHbXorRTd5TVNwd0lBQUE9PSJ9 -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["subject"],"name":[1],"type":["int"],"align":["right"]},{"label":["cond_per_block"],"name":[2],"type":["int"],"align":["right"]},{"label":["loglik1"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["n_par1"],"name":[4],"type":["int"],"align":["right"]},{"label":["aic1"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["loglik2"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["n_par2"],"name":[7],"type":["int"],"align":["right"]},{"label":["aic2"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["best"],"name":[9],"type":["chr"],"align":["left"]},{"label":["p"],"name":[10],"type":["dbl"],"align":["right"]}],"data":[{"1":"5","2":"2","3":"-32.16575","4":"8","5":"80.33149","6":"-32.34496","7":"7","8":"78.68992","9":"second","10":"0.1936762"}],"options":{"columns":{"min":{},"max":[10],"total":[10]},"rows":{"min":[10],"max":[10],"total":[1]},"pages":{}}}

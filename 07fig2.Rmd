@@ -77,7 +77,7 @@ plot_sym_psycho_best_asym <- function(subj, vert, title = "") {
          axis.ticks = element_line(size = size_line),
          strip.text = element_text(margin = margin(0,0,0,0, "lines")))
  
- if (title == text_full) {
+ if (title == text_full_asym) {
    p <- p +
      geom_segment(data = asym_par_s_vs_d_best_long %>%
                   filter(subject == subj, vertical == vert) %>%
