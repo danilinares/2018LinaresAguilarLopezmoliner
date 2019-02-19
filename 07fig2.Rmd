@@ -112,12 +112,12 @@ plot_sym_psycho_best_asym <- function(subj, vert, title = "") {
  }
 if (vert) {
       p <- p  + scale_shape_manual(breaks = c("Top", "Bottom"),
-                     values = c(15, 3)) +
+                     values = c(3, 7)) +
         scale_linetype_manual(breaks = c("Top", "Bottom"), values = c(1, 2)) 
 }
   else {
        p <- p  + scale_shape_manual(breaks = c("Right", "Left"),
-                     values = c(17, 16)) +
+                     values = c(8, 4)) +
         scale_linetype_manual(breaks = c("Right", "Left"), values = c(2, 1)) 
   }
  p
