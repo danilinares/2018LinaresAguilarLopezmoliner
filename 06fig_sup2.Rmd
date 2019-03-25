@@ -45,7 +45,7 @@ p_fig_sup2 <- ggplot() +
                                 "Sensory + asym. decisional"))  +
   # scale_linetype_manual(values = c(1, 2, 1, 2)) +
   scale_shape_manual(breaks = c("Right", "Left", "Top", "Bottom"),
-                     values = c(15, 17, 16, 3)) +
+                     values = c(8, 4, 3, 7)) +
   scale_linetype_manual(breaks = c("Right", "Left", "Top", "Bottom"),
                      values = c(1, 2, 1, 2)) +
    scale_y_continuous(breaks = c(0, .5, 1)) +
